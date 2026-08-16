@@ -1,12 +1,9 @@
 "use server";
 
-import { randomUUID } from "node:crypto";
-
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { isSupabaseConfigured } from "@/lib/env";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceClient, hasServiceClient } from "@/lib/supabase/admin";
 import { isSchemaReady, SCHEMA_MISSING_MESSAGE } from "@/lib/supabase/health";
@@ -30,20 +27,11 @@ const GENERIC_CREDENTIALS_ERROR =
 
 export type AuthState = { error?: string; success?: string } | null;
 
-const usernameSchema = z
-  .string()
-  .trim()
-  .toLowerCase()
-  .regex(
-    /^[a-z0-9_]{3,32}$/,
-    "Username must be 3-32 characters: lowercase letters, numbers or underscore.",
-  );
-
 /** Matches the rule stated under the field, so the UI never promises something
  *  the server does not enforce. */
 const passwordSchema = z
   .string()
-  .min(10, "Password must be at least 10 characters.")
+  .min(7, "Password must be at least 7 characters.")
   .max(200, "Password is too long.")
   .regex(/[a-z]/, "Password must include a lower case letter.")
   .regex(/[A-Z]/, "Password must include an upper case letter.")
@@ -52,11 +40,6 @@ const passwordSchema = z
 const signupSchema = z
   .object({
     fullName: z.string().trim().min(1, "Enter your name.").max(80),
-    businessName: z
-      .string()
-      .trim()
-      .min(2, "Enter your business name.")
-      .max(120, "Business name is too long."),
     email: z.string().trim().toLowerCase().email("Enter a valid email address."),
     password: passwordSchema,
     confirmPassword: z.string(),
@@ -136,7 +119,6 @@ export async function signUpAction(
 
   const parsed = signupSchema.safeParse({
     fullName: formData.get("fullName"),
-    businessName: formData.get("businessName"),
     email: formData.get("email"),
     password: formData.get("password"),
     confirmPassword: formData.get("confirmPassword"),
@@ -147,7 +129,16 @@ export async function signUpAction(
     return { error: parsed.error.issues[0]?.message ?? "Check the form and try again." };
   }
 
-  const { fullName, businessName, email, password } = parsed.data;
+  const { fullName, email, password } = parsed.data;
+  /*
+   * Sign-up does not ask for a business or workspace name — the only thing
+   * between someone and their dashboard is an email and a password. The name
+   * still exists because it is what gets printed on invoices and reports, so
+   * it starts as the person's own name (which is correct as-is for a sole
+   * trader) and is changed in Settings > Branding, next to the logo and
+   * signature it will sit beside.
+   */
+  const businessName = fullName;
   const context = await requestContext();
   const username = await deriveUsername(email);
 
@@ -172,7 +163,7 @@ export async function signUpAction(
       email,
       password,
       options: {
-        emailRedirectTo: `${origin}/auth/callback?next=/onboarding`,
+        emailRedirectTo: `${origin}/auth/callback?next=/dashboard`,
         data: { username, full_name: fullName, business_name: businessName },
       },
     });
@@ -264,7 +255,10 @@ export async function signUpAction(
     businessName,
   });
 
-  redirect(created ? "/dashboard" : "/onboarding");
+  // Either way the dashboard is next; the app layout provisions a workspace
+  // if this call did not manage to.
+  void created;
+  redirect("/dashboard");
 }
 
 /** True when the project should use the emailed confirmation-link flow. */
@@ -287,7 +281,7 @@ function signupFailureMessage(providerMessage: string): string {
     return "That email address was rejected as invalid. Use a real address you can receive mail at.";
   }
   if (/password/i.test(providerMessage)) {
-    return "That password was rejected. Use at least 10 characters with upper case, lower case and a number.";
+    return "That password was rejected. Use at least 7 characters with upper case, lower case and a number.";
   }
   return `Your account could not be created: ${providerMessage}`;
 }
@@ -371,7 +365,7 @@ export async function signInAction(
     ...context,
   });
 
-  // Users without a workspace go through onboarding first.
+  // No workspace step: the app layout creates one on first load if missing.
   const { data: membership } = await supabase
     .from("organization_members")
     .select("organization_id")
@@ -379,7 +373,24 @@ export async function signInAction(
     .limit(1)
     .maybeSingle();
 
-  redirect(membership ? (next.startsWith("/") ? next : "/dashboard") : "/onboarding");
+  void membership;
+  redirect(safeNext(next));
+}
+
+/**
+ * `next` arrives from a form field, so it is attacker-controllable and cannot
+ * be fed to redirect() as-is. Only same-origin paths are allowed: a bare "/"
+ * prefix is not enough, because "//evil.com" is protocol-relative and would
+ * leave the site.
+ */
+function safeNext(candidate: string): string {
+  if (!candidate.startsWith("/") || candidate.startsWith("//")) return "/dashboard";
+  // Stale bookmarks to routes that no longer exist would land on a 404 right
+  // after a successful sign-in, which reads as a broken login.
+  if (candidate === "/onboarding" || candidate.startsWith("/onboarding/")) {
+    return "/dashboard";
+  }
+  return candidate;
 }
 
 export async function requestPasswordResetAction(
@@ -550,7 +561,7 @@ export async function oauthSignInAction(
  * the caller before the owner membership row can pass its insert policy.
  *
  * Returns false when anything fails, in which case the caller sends the user to
- * /onboarding to complete it manually rather than leaving them in limbo.
+ * the dashboard, where the layout provisions one, rather than leaving them in limbo.
  */
 /**
  * Creates the workspace immediately after sign-up, when the project has email

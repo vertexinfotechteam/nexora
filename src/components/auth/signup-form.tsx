@@ -4,11 +4,11 @@ import Link from "next/link";
 import { useActionState, useMemo, useState } from "react";
 import {
   AlertCircle,
-  Check,
   CheckCircle2,
   Loader2,
-  ShieldCheck,
-  Sparkles,
+  Lock,
+  Mail,
+  User,
   X,
 } from "lucide-react";
 import { Field, PasswordField, SocialButtons, TextField } from "./field";
@@ -18,21 +18,15 @@ import { cn } from "@/lib/utils";
 /**
  * Create-account form.
  *
- * Two principles drive the layout:
- *
- *   1. Tell the user what will happen before they commit. The panel under the
- *      button states exactly what they get and what we will not do, rather
- *      than leaving them to find out after submitting.
- *   2. Never let the server be the first to say a field is wrong. Password
- *      rules are checked live against the same conditions the server enforces,
- *      so the requirements list and the actual validation cannot drift.
+ * Password rules are checked live against the same conditions the server
+ * enforces, so the requirements list and the actual validation cannot drift.
  */
 
 type Action = (state: AuthState, formData: FormData) => Promise<AuthState>;
 
 /** Mirrors passwordSchema in src/lib/auth/actions.ts exactly. */
 const PASSWORD_RULES = [
-  { id: "length", label: "At least 10 characters", test: (v: string) => v.length >= 10 },
+  { id: "length", label: "At least 7 characters", test: (v: string) => v.length >= 7 },
   { id: "lower", label: "A lower case letter", test: (v: string) => /[a-z]/.test(v) },
   { id: "upper", label: "An upper case letter", test: (v: string) => /[A-Z]/.test(v) },
   { id: "number", label: "A number", test: (v: string) => /[0-9]/.test(v) },
@@ -60,11 +54,11 @@ export function SignupForm({
 
   return (
     <div>
-      <h1 className="text-[28px] font-semibold leading-tight tracking-tight">
-        Create your account
+      <h1 className="text-center text-[26px] font-semibold leading-tight tracking-tight">
+        Create Account
       </h1>
-      <p className="mt-1.5 mb-5 text-[13.5px] leading-relaxed text-[var(--nx-text-muted)]">
-        Ten AI analyses free, every month. No card, no sales call.
+      <p className="mt-1.5 mb-6 text-center text-[13.5px] leading-relaxed text-[var(--nx-text-muted)]">
+        Fill in the details to get started
       </p>
 
       {/* Server response */}
@@ -87,49 +81,27 @@ export function SignupForm({
         </div>
       ) : null}
 
-      <SocialButtons
-        action={oauthAction}
-        disabled={!supabaseConfigured}
-        label="or sign up with email"
-      />
-
       <form action={formAction} className="space-y-4">
-        {/* ---- who you are ------------------------------------------------ */}
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Your name" required htmlFor="fullName">
-            <TextField
-              id="fullName"
-              name="fullName"
-              autoComplete="name"
-              required
-              maxLength={80}
-              placeholder="Priya Sharma"
-            />
-          </Field>
-
-          <Field
-            label="Business name"
+        <Field label="Full name" required htmlFor="fullName">
+          <TextField
+            id="fullName"
+            name="fullName"
+            autoComplete="name"
             required
-            htmlFor="businessName"
-            hint="Printed on your reports and quotations."
-          >
-            <TextField
-              id="businessName"
-              name="businessName"
-              autoComplete="organization"
-              required
-              maxLength={120}
-              placeholder="Sharma Design Studio"
-            />
-          </Field>
-        </div>
+            maxLength={80}
+            placeholder="Priya Sharma"
+            icon={User}
+          />
+        </Field>
 
-        <Field
-          label="Work email"
-          required
-          htmlFor="email"
-          hint="Used to sign in and to recover your account."
-        >
+        {/*
+          No business or workspace field. Creating an account asks for the
+          three things an account actually needs; the name printed on invoices
+          defaults to the user's own and is changed in Settings > Branding,
+          where they can see the logo and signature it sits next to.
+        */}
+
+        <Field label="Email address" required htmlFor="email">
           <TextField
             id="email"
             name="email"
@@ -137,23 +109,23 @@ export function SignupForm({
             autoComplete="email"
             required
             placeholder="you@company.com"
+            icon={Mail}
           />
         </Field>
 
-        {/* ---- password --------------------------------------------------- */}
-        <Field label="Password" required htmlFor="password">
+        <Field label="Create password" required htmlFor="password">
           <PasswordField
             id="password"
             name="password"
             autoComplete="new-password"
             required
-            minLength={10}
+            minLength={7}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
+            icon={Lock}
           />
         </Field>
 
-        {/* Strength meter. Four segments, one per rule actually enforced. */}
         <div aria-live="polite">
           <div className="flex gap-1" aria-hidden>
             {PASSWORD_RULES.map((rule, index) => (
@@ -172,30 +144,9 @@ export function SignupForm({
               />
             ))}
           </div>
-
-          <ul className="mt-2 grid gap-x-4 gap-y-1 sm:grid-cols-2">
-            {PASSWORD_RULES.map((rule) => {
-              const ok = rule.test(password);
-              return (
-                <li
-                  key={rule.id}
-                  className={cn(
-                    "flex items-center gap-1.5 text-[11.5px] transition-colors",
-                    ok
-                      ? "text-[var(--nx-success-fg)]"
-                      : "text-[var(--nx-text-muted)]",
-                  )}
-                >
-                  {ok ? (
-                    <Check className="h-3 w-3 shrink-0" />
-                  ) : (
-                    <span className="h-3 w-3 shrink-0 rounded-full border border-current opacity-40" />
-                  )}
-                  {rule.label}
-                </li>
-              );
-            })}
-          </ul>
+          <p className="mt-1.5 text-[11.5px] text-[var(--nx-text-muted)]">
+            At least 7 characters, with upper case, lower case and a number.
+          </p>
         </div>
 
         <Field label="Confirm password" required htmlFor="confirmPassword">
@@ -204,10 +155,11 @@ export function SignupForm({
             name="confirmPassword"
             autoComplete="new-password"
             required
-            minLength={10}
+            minLength={7}
             value={confirm}
             onChange={(event) => setConfirm(event.target.value)}
             aria-invalid={mismatch}
+            icon={Lock}
           />
         </Field>
 
@@ -217,29 +169,6 @@ export function SignupForm({
             The two passwords do not match.
           </p>
         ) : null}
-
-        {/* ---- what you get ----------------------------------------------- */}
-        <div className="rounded-lg border border-[var(--nx-border)] bg-[var(--nx-inset)] p-3">
-          <p className="mb-1.5 flex items-center gap-1.5 text-[11.5px] font-semibold">
-            <Sparkles className="h-3.5 w-3.5 text-[var(--nx-purple)]" />
-            What happens next
-          </p>
-          <ul className="space-y-1">
-            {[
-              "Your workspace is created and you go straight to your dashboard",
-              "10 AI analysis credits are added — uploads and exports stay free",
-              "Your data stays private to your workspace and is never used to train anything",
-            ].map((item) => (
-              <li
-                key={item}
-                className="flex items-start gap-1.5 text-[11.5px] leading-relaxed text-[var(--nx-text-muted)]"
-              >
-                <Check className="mt-0.5 h-3 w-3 shrink-0 text-[var(--nx-success)]" />
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
 
         <label className="flex cursor-pointer items-start gap-2.5">
           <input
@@ -251,11 +180,11 @@ export function SignupForm({
           <span className="text-[12.5px] leading-relaxed text-[var(--nx-text-muted)]">
             I agree to the{" "}
             <Link href="/terms" className="font-medium text-[var(--nx-purple)] hover:underline">
-              Terms of service
+              Terms of Service
             </Link>{" "}
             and{" "}
             <Link href="/privacy" className="font-medium text-[var(--nx-purple)] hover:underline">
-              Privacy policy
+              Privacy Policy
             </Link>
             .
           </span>
@@ -267,14 +196,17 @@ export function SignupForm({
           className="mt-1 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[var(--nx-purple)] text-[14px] font-semibold text-white transition-colors hover:bg-[var(--nx-purple-hover)] active:bg-[var(--nx-purple-active)] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-          {pending ? "Creating your workspace…" : "Create account"}
+          {pending ? "Creating your workspace…" : "Create Account"}
         </button>
-
-        <p className="flex items-center justify-center gap-1.5 text-[11px] text-[var(--nx-text-faint)]">
-          <ShieldCheck className="h-3 w-3" />
-          Your password is handled by Supabase Auth. Nexus never stores it.
-        </p>
       </form>
+
+      <div className="mt-5">
+        <SocialButtons
+          action={oauthAction}
+          disabled={!supabaseConfigured}
+          label="or sign up with"
+        />
+      </div>
 
       <p className="mt-5 text-center text-[13px] text-[var(--nx-text-muted)]">
         Already have an account?{" "}

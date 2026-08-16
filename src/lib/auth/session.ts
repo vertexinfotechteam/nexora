@@ -60,7 +60,8 @@ export async function getSession(): Promise<Session | null> {
     .maybeSingle();
 
   if (!profile || !membership) {
-    // Authenticated but onboarding is incomplete.
+    // Authenticated, but no workspace yet. The app layout provisions one on
+    // the next request; an empty organizationId is the signal it watches for.
     return {
       userId: user.id,
       organizationId: "",

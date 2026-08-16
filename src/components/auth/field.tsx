@@ -55,25 +55,38 @@ const inputClass =
 
 export function TextField({
   className,
+  icon: Icon,
   ...props
-}: React.ComponentProps<"input">) {
-  return <input className={cn(inputClass, className)} {...props} />;
+}: React.ComponentProps<"input"> & { icon?: React.ComponentType<{ className?: string }> }) {
+  if (!Icon) {
+    return <input className={cn(inputClass, className)} {...props} />;
+  }
+  return (
+    <div className="relative">
+      <Icon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--nx-text-faint)]" />
+      <input className={cn(inputClass, "pl-10", className)} {...props} />
+    </div>
+  );
 }
 
 /** Password input with a show/hide toggle. */
 export function PasswordField({
   className,
+  icon: Icon,
   ...props
-}: React.ComponentProps<"input">) {
+}: React.ComponentProps<"input"> & { icon?: React.ComponentType<{ className?: string }> }) {
   const [visible, setVisible] = useState(false);
   const describedBy = useId();
 
   return (
     <div className="relative">
+      {Icon ? (
+        <Icon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--nx-text-faint)]" />
+      ) : null}
       <input
         {...props}
         type={visible ? "text" : "password"}
-        className={cn(inputClass, "pr-11", className)}
+        className={cn(inputClass, "pr-11", Icon && "pl-10", className)}
       />
       <button
         type="button"
@@ -105,6 +118,12 @@ export function SocialButtons({
 }) {
   return (
     <>
+      <div className="mb-5 flex items-center gap-3">
+        <span className="h-px flex-1 bg-[var(--nx-border)]" />
+        <span className="text-[12px] text-[var(--nx-text-muted)]">{label}</span>
+        <span className="h-px flex-1 bg-[var(--nx-border)]" />
+      </div>
+
       <div className="grid grid-cols-2 gap-3">
         {(
           [
@@ -124,12 +143,6 @@ export function SocialButtons({
             </button>
           </form>
         ))}
-      </div>
-
-      <div className="my-5 flex items-center gap-3">
-        <span className="h-px flex-1 bg-[var(--nx-border)]" />
-        <span className="text-[12px] text-[var(--nx-text-muted)]">{label}</span>
-        <span className="h-px flex-1 bg-[var(--nx-border)]" />
       </div>
     </>
   );

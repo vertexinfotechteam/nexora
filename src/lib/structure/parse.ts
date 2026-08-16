@@ -188,7 +188,7 @@ export function parseRawData(raw: string, currencyCode = "INR"): ParseResult {
 
         // With 2+ numbers, the convention is [..., qty, rate] or [qty, rate].
         let quantity = 1;
-        let unitPriceMinor = numericParts[numericParts.length - 1].minor!;
+        const unitPriceMinor = numericParts[numericParts.length - 1].minor!;
 
         if (numericParts.length >= 2) {
           const candidate = parseQuantity(parts[numericParts[0].index]);

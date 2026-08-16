@@ -65,44 +65,14 @@ export function TopBar({
         <Menu className="h-4 w-4" />
       </button>
 
-      {/* Workspace selector */}
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger asChild>
-          <button
-            type="button"
-            className="flex h-7 items-center gap-1.5 rounded-md border border-[var(--nx-border)] bg-[var(--nx-hover)] px-2.5 text-[12px] text-[var(--nx-text)] hover:bg-[var(--nx-elevated)]"
-          >
-            <span className="max-w-[140px] truncate">
-              {session.organizationName}
-            </span>
-            <ChevronDown className="h-3 w-3 text-[var(--nx-text-dim)]" />
-          </button>
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Portal>
-          <DropdownMenu.Content
-            align="start"
-            sideOffset={6}
-            className="z-50 min-w-[220px] rounded-md border border-[var(--nx-border)] bg-[var(--nx-card)] p-1 text-[12.5px] shadow-xl"
-          >
-            <div className="px-2 py-1.5">
-              <p className="font-medium text-[var(--nx-text)]">
-                {session.organizationName}
-              </p>
-              <p className="mt-0.5 text-[11px] text-[var(--nx-text-muted)]">
-                {session.plan.toUpperCase()} plan · you are {session.role}
-              </p>
-            </div>
-            <DropdownMenu.Separator className="my-1 h-px bg-[var(--nx-border)]" />
-            <DropdownMenu.Item
-              onSelect={() => router.push("/settings")}
-              className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-[var(--nx-text-muted)] outline-none data-[highlighted]:bg-[var(--nx-elevated)] data-[highlighted]:text-[var(--nx-text)]"
-            >
-              <Settings className="h-3.5 w-3.5" />
-              Workspace settings
-            </DropdownMenu.Item>
-          </DropdownMenu.Content>
-        </DropdownMenu.Portal>
-      </DropdownMenu.Root>
+      {/*
+       * No workspace switcher.
+       *
+       * A workspace exists so tenant data can be isolated; it is not something
+       * the user chooses between, and a dropdown listing exactly one entry is
+       * a control that does nothing. Everything it offered — plan, role,
+       * settings — lives on the account menu and the Settings page.
+       */}
 
       {/* AI search */}
       <form onSubmit={submitSearch} className="mx-auto hidden w-full max-w-[420px] md:block">

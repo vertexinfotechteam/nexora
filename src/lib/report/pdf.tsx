@@ -12,7 +12,7 @@ import {
   Line as SvgLine,
   renderToBuffer,
 } from "@react-pdf/renderer";
-import { buildChartGeometry, PDF_SERIES_COLORS } from "./chart-svg";
+import { buildChartGeometry } from "./chart-svg";
 import { accuracyLabel } from "@/lib/analysis/forecast";
 import { formatNumber } from "@/lib/utils";
 import type { ReportPayload } from "@/lib/store/types";

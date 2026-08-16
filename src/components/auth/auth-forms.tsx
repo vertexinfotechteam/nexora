@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
-import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2, Lock, Mail } from "lucide-react";
 import { Field, PasswordField, SocialButtons, TextField } from "./field";
 import type { AuthState } from "@/lib/auth/actions";
 
@@ -66,9 +66,11 @@ export function LoginForm({
 
   return (
     <div>
-      <h1 className="text-[28px] font-semibold tracking-tight">Welcome back</h1>
-      <p className="mt-1.5 mb-6 text-[13.5px] text-[var(--nx-text-muted)]">
-        Sign in to your Nexus account.
+      <h1 className="text-center text-[26px] font-semibold tracking-tight">
+        Welcome Back!
+      </h1>
+      <p className="mt-1.5 mb-6 text-center text-[13.5px] text-[var(--nx-text-muted)]">
+        Sign in to continue to your account
       </p>
 
       {resetDone ? (
@@ -78,12 +80,6 @@ export function LoginForm({
       ) : null}
 
       <Notice state={state} />
-
-      <SocialButtons
-        action={oauthAction}
-        disabled={!supabaseConfigured}
-        label="or sign in with email"
-      />
 
       <form action={formAction} className="space-y-4">
         <input type="hidden" name="next" value={next} />
@@ -96,35 +92,52 @@ export function LoginForm({
             required
             disabled={!supabaseConfigured}
             placeholder="you@company.com"
+            icon={Mail}
           />
         </Field>
 
-        <div>
-          <Field label="Password" required htmlFor="password">
-            <PasswordField
-              id="password"
-              name="password"
-              autoComplete="current-password"
-              required
-              disabled={!supabaseConfigured}
-              placeholder="••••••••••"
+        <Field label="Password" required htmlFor="password">
+          <PasswordField
+            id="password"
+            name="password"
+            autoComplete="current-password"
+            required
+            disabled={!supabaseConfigured}
+            placeholder="••••••••"
+            icon={Lock}
+          />
+        </Field>
+
+        <div className="flex items-center justify-between">
+          <label className="flex cursor-pointer items-center gap-2 text-[12.5px] text-[var(--nx-text-muted)]">
+            <input
+              type="checkbox"
+              defaultChecked
+              className="h-4 w-4 cursor-pointer rounded border-[var(--nx-border-strong)] accent-[var(--nx-purple)]"
             />
-          </Field>
-          <div className="mt-1.5 text-right">
-            <Link
-              href="/forgot-password"
-              className="text-[12.5px] font-medium text-[var(--nx-purple)] hover:underline"
-            >
-              Forgot your password?
-            </Link>
-          </div>
+            Remember me
+          </label>
+          <Link
+            href="/forgot-password"
+            className="text-[12.5px] font-medium text-[var(--nx-purple)] hover:underline"
+          >
+            Forgot password?
+          </Link>
         </div>
 
         <SubmitButton label="Sign in" pending={pending} />
       </form>
 
+      <div className="mt-5">
+        <SocialButtons
+          action={oauthAction}
+          disabled={!supabaseConfigured}
+          label="or continue with"
+        />
+      </div>
+
       {!supabaseConfigured ? (
-        <div className="mt-6 rounded-lg border border-[var(--nx-border)] bg-[var(--nx-inset)] p-4">
+        <div className="mt-1 rounded-lg border border-[var(--nx-border)] bg-[var(--nx-inset)] p-4">
           <p className="text-[12.5px] leading-relaxed text-[var(--nx-text-muted)]">
             Supabase is not connected yet, so there are no accounts. You can
             still use the full analysis engine locally — your data stays on this
@@ -140,13 +153,13 @@ export function LoginForm({
           </form>
         </div>
       ) : (
-        <p className="mt-6 text-center text-[13px] text-[var(--nx-text-muted)]">
-          New to Nexus?{" "}
+        <p className="mt-5 text-center text-[13px] text-[var(--nx-text-muted)]">
+          Don&apos;t have an account?{" "}
           <Link
             href="/signup"
             className="font-semibold text-[var(--nx-purple)] hover:underline"
           >
-            Create a free account
+            Create account
           </Link>
         </p>
       )}
@@ -217,7 +230,7 @@ export function ResetPasswordForm({ action }: { action: Action }) {
             name="password"
             autoComplete="new-password"
             required
-            minLength={10}
+            minLength={7}
           />
         </Field>
 
@@ -227,12 +240,12 @@ export function ResetPasswordForm({ action }: { action: Action }) {
             name="confirmPassword"
             autoComplete="new-password"
             required
-            minLength={10}
+            minLength={7}
           />
         </Field>
 
         <p className="text-[11.5px] text-[var(--nx-text-muted)]">
-          At least 10 characters, with upper case, lower case and a number.
+          At least 7 characters, with upper case, lower case and a number.
         </p>
 
         <SubmitButton label="Update password" pending={pending} />

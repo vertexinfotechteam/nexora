@@ -34,6 +34,42 @@ export type ProvisionResult =
   | { ok: true; organizationId: string; created: boolean }
   | { ok: false; error: string };
 
+/**
+ * Guarantees a signed-in user has a workspace, creating one if not.
+ *
+ * There is no "set up your workspace" step in the product: a workspace is an
+ * implementation detail of multi-tenancy, not a decision the user came here to
+ * make. Anyone signing in without one gets it provisioned silently from the
+ * details they already gave, so the only screens they ever see are sign in and
+ * create account.
+ *
+ * Safe to call on every request: it returns the existing workspace untouched
+ * once one exists.
+ */
+export async function ensureWorkspace(input: {
+  userId: string;
+  email: string | null;
+  displayName: string | null;
+  username: string;
+}): Promise<string | null> {
+  // A person's own name is the sensible default; the business name is editable
+  // later under Settings, and appears on exports from there.
+  const fallbackName =
+    input.displayName?.trim() ||
+    input.email?.split("@")[0]?.trim() ||
+    input.username ||
+    "My workspace";
+
+  const result = await provisionWorkspace({
+    userId: input.userId,
+    username: input.username || `user_${input.userId.slice(0, 8)}`,
+    displayName: input.displayName ?? fallbackName,
+    businessName: fallbackName,
+  });
+
+  return result.ok ? result.organizationId : null;
+}
+
 export async function provisionWorkspace(
   input: ProvisionInput,
 ): Promise<ProvisionResult> {
