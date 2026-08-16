@@ -17,6 +17,13 @@ import { hardenAuthCookie } from "@/lib/auth/cookies";
 const PUBLIC_PATHS = [
   "/login",
   "/signup",
+  /*
+   * The operations sign-in must be reachable without a session, or it would
+   * bounce to the customer login and never be usable. Only this exact path is
+   * public — isPublic() matches the entry or a child of it, and "/admin" is
+   * not a child of "/admin/login", so the panel itself stays gated.
+   */
+  "/admin/login",
   "/forgot-password",
   "/reset-password",
   "/auth/callback",

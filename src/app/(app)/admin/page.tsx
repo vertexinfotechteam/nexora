@@ -62,14 +62,22 @@ export default async function AdminPage() {
         <EmptyState
           icon={<ShieldAlert className="h-4 w-4" />}
           title="This area is for platform staff"
-          description="The admin panel controls Nexus itself — every account, not just this workspace — so it is limited to staff. If you need access, ask a super admin to add you."
+          description="The admin panel controls Nexus itself — every account, not just this workspace — so it is limited to staff. If you are staff, sign in through the operations door with your staff account. If you need access, ask a super admin to add you."
           action={
-            <Link
-              href="/dashboard"
-              className="text-[12px] text-[var(--nx-accent)] hover:underline"
-            >
-              Back to overview
-            </Link>
+            <div className="flex items-center gap-3">
+              <Link
+                href="/admin/login"
+                className="text-[12px] font-medium text-[var(--nx-accent)] hover:underline"
+              >
+                Operations sign-in
+              </Link>
+              <Link
+                href="/dashboard"
+                className="text-[12px] text-[var(--nx-text-muted)] hover:underline"
+              >
+                Back to overview
+              </Link>
+            </div>
           }
           className="py-16"
         />
