@@ -30,8 +30,28 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files — never commit real secrets
 .env*
+# ...but the template carries no secrets and is needed to set the project up.
+!.env.example
+
+# Local development artifacts and test output
+.nexora/
+sample-sales.csv
+*.tmp
+docid.txt
+dsid.txt
+stream.txt
+req.json
+upload-result.json
+# Generated reports and rendered pages from manual testing
+report*.pdf
+report*.xlsx
+quote*.pdf
+quote*.xlsx
+pdfpages/
+quotepages/
+pdfbranded/
 
 # vercel
 .vercel
