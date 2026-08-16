@@ -48,7 +48,7 @@ export async function renderDocumentExcel(
   const major = (minor: number) => fromMinor(minor, currency);
 
   workbook.creator = businessName;
-  workbook.company = "NEXORA AI · Vertex Infotech";
+  workbook.company = "Nexus · Vertex Infotech";
 
   /* ------------------------------------------------------------------ */
   /* Document sheet                                                     */

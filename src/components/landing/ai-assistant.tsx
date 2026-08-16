@@ -15,7 +15,7 @@ const SUGGESTIONS = [
 
 const GREETING: Message = {
   role: "assistant",
-  text: "Hello. I'm the NEXORA assistant — I'm here around the clock. Ask me about credits, security, supported files, exports, or how the analysis actually works.",
+  text: "Hello. I'm the Nexus assistant — I'm here around the clock. Ask me about credits, security, supported files, exports, or how the analysis actually works.",
 };
 
 /**
@@ -97,7 +97,7 @@ export function AiAssistant() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        aria-label={open ? "Close assistant" : "Open the NEXORA assistant"}
+        aria-label={open ? "Close assistant" : "Open the Nexus assistant"}
         aria-expanded={open}
         className={cn(
           "fixed bottom-4 right-4 z-[60] flex h-12 w-12 items-center justify-center rounded-full shadow-[var(--nx-shadow-lg)] transition-transform hover:scale-105",
@@ -120,7 +120,7 @@ export function AiAssistant() {
       {/* Panel */}
       {open ? (
         <section
-          aria-label="NEXORA assistant"
+          aria-label="Nexus assistant"
           className="nx-enter fixed bottom-20 right-4 z-[60] flex h-[min(520px,calc(100vh-7rem))] w-[min(380px,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-[var(--nx-border)] bg-[var(--nx-card)] shadow-[var(--nx-shadow-lg)]"
         >
           <header className="flex items-center gap-2.5 border-b border-[var(--nx-border)] bg-[var(--nx-surface)] px-3 py-2.5">
@@ -129,7 +129,7 @@ export function AiAssistant() {
             </span>
             <div className="min-w-0">
               <p className="text-[12.5px] font-semibold leading-tight">
-                NEXORA Assistant
+                Nexus Assistant
               </p>
               <p className="flex items-center gap-1 text-[10.5px] text-[var(--nx-text-muted)]">
                 <span className="h-1.5 w-1.5 rounded-full bg-[var(--nx-success)]" />
@@ -206,7 +206,7 @@ export function AiAssistant() {
               ref={inputRef}
               value={input}
               onChange={(event) => setInput(event.target.value)}
-              placeholder="Ask about NEXORA…"
+              placeholder="Ask about Nexus…"
               maxLength={500}
               className="h-8 flex-1 rounded-md border border-[var(--nx-border)] bg-[var(--nx-inset)] px-2.5 text-[12px] text-[var(--nx-text)] outline-none placeholder:text-[var(--nx-text-faint)] focus:border-[var(--nx-purple)]"
             />

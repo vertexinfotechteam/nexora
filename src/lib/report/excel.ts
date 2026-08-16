@@ -40,7 +40,7 @@ export async function renderReportExcel(
   const workbook = new ExcelJS.Workbook();
 
   workbook.creator = branding.business_name ?? workspaceName;
-  workbook.company = "NEXORA AI · Vertex Infotech";
+  workbook.company = "Nexus · Vertex Infotech";
   workbook.created = new Date(payload.generatedAt);
 
   const businessName = branding.business_name ?? workspaceName;
@@ -198,7 +198,7 @@ export async function renderReportExcel(
 
   row++;
   summary.getCell(`A${row}`).value =
-    "Every figure in this workbook was computed by the NEXORA AI analytics engine from the source dataset.";
+    "Every figure in this workbook was computed by the Nexus analytics engine from the source dataset.";
   summary.getCell(`A${row}`).font = { size: 8, italic: true, color: { argb: MUTED } };
 
   /* ------------------------------------------------------------------ */

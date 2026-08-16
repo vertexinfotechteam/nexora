@@ -272,7 +272,7 @@ export function SignupForm({
 
         <p className="flex items-center justify-center gap-1.5 text-[11px] text-[var(--nx-text-faint)]">
           <ShieldCheck className="h-3 w-3" />
-          Your password is handled by Supabase Auth. NEXORA never stores it.
+          Your password is handled by Supabase Auth. Nexus never stores it.
         </p>
       </form>
 

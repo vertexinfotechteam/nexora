@@ -1,5 +1,5 @@
 -- =============================================================================
--- NEXORA AI — initial schema
+-- Nexus — initial schema
 -- Paste this whole file into the Supabase SQL Editor and run it once.
 --
 -- Design rules:

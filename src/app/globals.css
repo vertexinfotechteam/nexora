@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* =========================================================================
-   NEXORA AI — theme tokens
+   Nexus — theme tokens
    Powered by Vertex Infotech
 
    Every surface, border and text colour in the product resolves through the
@@ -99,6 +99,13 @@
   --nx-glass: rgba(255, 255, 255, 0.72);
   --nx-glass-border: rgba(10, 74, 60, 0.1);
 
+  /* Brand mark. Fixed identity colours: the logo should look the same on a
+     letterhead as it does in the app, so these do not follow the accent. */
+  --nx-logo-dark: #2b3138;
+  --nx-logo-green: #1c8a6a;
+  --nx-logo-bar: #ffffff;
+  --nx-logo-line: #ffffff;
+
   --nx-radius: 0.625rem;
 }
 
@@ -183,6 +190,13 @@
   --nx-ambient-opacity: 1;
   --nx-glass: rgba(13, 18, 32, 0.72);
   --nx-glass-border: rgba(124, 92, 255, 0.14);
+
+  /* On a near-black ground the slate half would disappear, so it lifts to a
+     light neutral while the green half keeps its identity. */
+  --nx-logo-dark: #e2e8f0;
+  --nx-logo-green: #22c58f;
+  --nx-logo-bar: #05070d;
+  --nx-logo-line: #05070d;
 }
 
 @theme inline {

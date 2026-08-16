@@ -4,7 +4,7 @@ import "server-only";
  * The product assistant that answers visitor questions 24/7.
  *
  * Two layers, in order:
- *   1. A curated knowledge base of facts about NEXORA. Always available, needs
+ *   1. A curated knowledge base of facts about Nexus. Always available, needs
  *      no API key, and cannot invent anything — this is what makes the
  *      assistant genuinely always-on.
  *   2. When an AI provider is configured, the model rewrites the matched facts
@@ -25,9 +25,9 @@ export const KNOWLEDGE_BASE: KnowledgeEntry[] = [
   {
     id: "what-is",
     keywords: ["what", "nexora", "product", "do", "about", "platform", "explain"],
-    question: "What is NEXORA AI?",
+    question: "What is Nexus?",
     answer:
-      "NEXORA AI is a data analytics platform. You upload a spreadsheet or data file, describe what you want in plain English, and it runs the analysis for you — profiling the data, computing the measures, detecting anomalies, fitting a forecast and writing the findings. You watch each step happen live, then download a PDF or Excel report. It is built by Vertex Infotech.",
+      "Nexus is a data analytics platform. You upload a spreadsheet or data file, describe what you want in plain English, and it runs the analysis for you — profiling the data, computing the measures, detecting anomalies, fitting a forecast and writing the findings. You watch each step happen live, then download a PDF or Excel report. It is built by Vertex Infotech.",
   },
   {
     id: "credits",
@@ -88,9 +88,9 @@ export const KNOWLEDGE_BASE: KnowledgeEntry[] = [
   {
     id: "team",
     keywords: ["team", "who", "built", "made", "company", "vertex", "founder", "behind"],
-    question: "Who builds NEXORA AI?",
+    question: "Who builds Nexus?",
     answer:
-      "NEXORA AI is built by Vertex Infotech. The team is Tarang Vasoya (Project Lead & CEO), Het Aghera (AI & Backend), Om Bardoliya (Frontend & UI/UX), Dharm Senjaliya (Product & Database) and Navneet Radadiya (QA & Product).",
+      "Nexus is built by Vertex Infotech. The team is Tarang Vasoya (Project Lead & CEO), Het Aghera (AI & Backend), Om Bardoliya (Frontend & UI/UX), Dharm Senjaliya (Product & Database) and Navneet Radadiya (QA & Product).",
   },
   {
     id: "forecast",
@@ -158,9 +158,9 @@ export function findRelevant(
 }
 
 export const ASSISTANT_FALLBACK =
-  "I can help with questions about what NEXORA AI does, credits and pricing, supported file formats, exports, security, and how the analysis works. Ask me one of those, or use Contact sales in the pricing section to reach the Vertex Infotech team directly.";
+  "I can help with questions about what Nexus does, credits and pricing, supported file formats, exports, security, and how the analysis works. Ask me one of those, or use Contact sales in the pricing section to reach the Vertex Infotech team directly.";
 
-export const ASSISTANT_SYSTEM_PROMPT = `You are the product assistant for NEXORA AI, a data analytics platform built by Vertex Infotech.
+export const ASSISTANT_SYSTEM_PROMPT = `You are the product assistant for Nexus, a data analytics platform built by Vertex Infotech.
 
 You will be given a visitor's question and a set of VERIFIED FACTS about the product.
 

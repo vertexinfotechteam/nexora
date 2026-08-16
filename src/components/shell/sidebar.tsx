@@ -7,6 +7,7 @@ import { ChevronLeft, PanelLeft, Sparkles, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NAV_GROUPS } from "./nav-config";
 import { Badge } from "@/components/ui/primitives";
+import { LogoMark } from "@/components/brand/logo";
 
 export function Sidebar({
   mobileOpen,
@@ -44,12 +45,10 @@ export function Sidebar({
       >
         {/* Brand */}
         <div className="flex h-[46px] shrink-0 items-center gap-2 border-b border-[var(--nx-border)] px-3">
-          <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-[var(--nx-accent)]">
-            <Sparkles className="h-3 w-3 text-[var(--nx-accent-fg)]" />
-          </div>
+          <LogoMark className="h-6 w-6" />
           {!collapsed ? (
             <span className="truncate text-[13px] font-semibold tracking-tight">
-              NEXORA AI
+              Nexus
             </span>
           ) : null}
           <button

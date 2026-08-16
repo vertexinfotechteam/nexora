@@ -10,12 +10,12 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 
 export const metadata: Metadata = {
   title: {
-    default: "NEXORA AI — AI Data Analytics Platform",
-    template: "%s · NEXORA AI",
+    default: "Nexus — AI Data Analytics Platform",
+    template: "%s · Nexus",
   },
   description:
     "Upload a dataset, ask a question in plain language, and watch the analysis run step by step — every figure computed, never guessed. Powered by Vertex Infotech.",
-  applicationName: "NEXORA AI",
+  applicationName: "Nexus",
   authors: [{ name: "Vertex Infotech" }],
   robots: { index: false, follow: false },
 };

@@ -454,7 +454,7 @@ export async function renderDocumentPdf(
     <Document
       title={`${DOCUMENT_KIND_LABELS[document.kind]} ${document.reference}`}
       author={branding.business_name ?? document.from.name}
-      creator="NEXORA AI"
+      creator="Nexus"
     >
       <DocumentBody document={document} branding={branding} />
     </Document>,

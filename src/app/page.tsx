@@ -14,7 +14,7 @@ import {
 } from "@/components/landing/sections";
 
 export const metadata: Metadata = {
-  title: "NEXORA AI — Ask a question, get the analysis",
+  title: "Nexus — Ask a question, get the analysis",
   description:
     "Upload a spreadsheet, describe what you need in plain English, and watch the analysis run step by step. Every figure computed, never guessed. Powered by Vertex Infotech.",
 };

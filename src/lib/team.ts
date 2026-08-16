@@ -1,4 +1,4 @@
-/** The people behind NEXORA AI at Vertex Infotech. */
+/** The people behind Nexus at Vertex Infotech. */
 export type TeamMember = {
   name: string;
   role: string;
@@ -46,6 +46,6 @@ export const TEAM: TeamMember[] = [
 
 export const COMPANY = {
   name: "Vertex Infotech",
-  product: "NEXORA AI",
+  product: "Nexus",
   tagline: "Analytics you can check, not just trust.",
 } as const;

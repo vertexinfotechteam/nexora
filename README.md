@@ -1,4 +1,4 @@
-# NEXORA AI
+# Nexus
 
 **Powered by Vertex Infotech**
 
@@ -106,7 +106,7 @@ OLLAMA_BASE_URL=http://127.0.0.1:11434
 ```
 
 Set several and the orchestrator uses the first and falls back down the list on
-provider errors. `NEXORA_AI_PROVIDER` chooses which is preferred.
+provider errors. `Nexus_AI_PROVIDER` chooses which is preferred.
 
 **Without a key the app still works.** Profiling, measures, trends, breakdowns,
 anomaly detection, forecasting, recommendations, charts and the PDF report are

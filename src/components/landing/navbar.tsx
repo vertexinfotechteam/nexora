@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Menu, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { LogoMark } from "@/components/brand/logo";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { cn } from "@/lib/utils";
 
@@ -43,11 +44,9 @@ export function LandingNavbar({ signedIn }: { signedIn: boolean }) {
     >
       <nav className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2">
-          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br from-[var(--nx-purple)] to-[var(--nx-accent)]">
-            <Sparkles className="h-3.5 w-3.5 text-white" />
-          </span>
+          <LogoMark className="h-7 w-7" />
           <span className="text-[14.5px] font-semibold tracking-tight">
-            NEXORA AI
+            Nexus
           </span>
         </Link>
 

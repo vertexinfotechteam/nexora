@@ -23,7 +23,7 @@ export default async function OnboardingPage() {
           <span className="flex h-6 w-6 items-center justify-center rounded bg-[var(--nx-accent)]">
             <Sparkles className="h-3.5 w-3.5 text-[var(--nx-accent-fg)]" />
           </span>
-          <span className="text-[15px] font-semibold tracking-tight">NEXORA AI</span>
+          <span className="text-[15px] font-semibold tracking-tight">Nexus</span>
         </div>
         <OnboardingForm
           action={completeOnboardingAction}

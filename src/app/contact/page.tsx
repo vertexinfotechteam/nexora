@@ -19,7 +19,7 @@ const ROUTES = [
     body: "Pricing for larger teams, private deployment, bringing your own model keys, or a security review before you commit.",
     action: {
       label: "hello@vertexinfotech.com",
-      href: "mailto:hello@vertexinfotech.com?subject=NEXORA%20AI%20enquiry",
+      href: "mailto:hello@vertexinfotech.com?subject=Nexus%20AI%20enquiry",
     },
   },
   {
@@ -28,7 +28,7 @@ const ROUTES = [
     body: "An analysis that failed, an export that will not download, a figure that looks wrong. Include your workspace name and roughly when it happened.",
     action: {
       label: "support@vertexinfotech.com",
-      href: "mailto:support@vertexinfotech.com?subject=NEXORA%20AI%20support",
+      href: "mailto:support@vertexinfotech.com?subject=Nexus%20AI%20support",
     },
   },
   {
@@ -37,7 +37,7 @@ const ROUTES = [
     body: "Vulnerability reports, data protection requests, or questions about how your data is isolated. These are read by a person, not a queue.",
     action: {
       label: "security@vertexinfotech.com",
-      href: "mailto:security@vertexinfotech.com?subject=NEXORA%20AI%20security",
+      href: "mailto:security@vertexinfotech.com?subject=Nexus%20AI%20security",
     },
   },
 ];

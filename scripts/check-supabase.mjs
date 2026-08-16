@@ -61,7 +61,7 @@ const bad = (message) => {
 };
 const warn = (message) => console.log(`  ! ${message}`);
 
-console.log("\nNEXORA → Supabase connection check\n");
+console.log("\nNexus → Supabase connection check\n");
 
 // --- 1. configuration ------------------------------------------------------
 console.log("Configuration");

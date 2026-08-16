@@ -8,6 +8,7 @@ import { computeDocumentTotals } from "@/lib/documents/totals";
 import { formatMoney, getCurrency } from "@/lib/structure/money";
 import { DOCUMENT_KIND_LABELS } from "@/lib/documents/types";
 import { COMPANY } from "@/lib/team";
+import { LogoMark } from "@/components/brand/logo";
 
 export const dynamic = "force-dynamic";
 
@@ -258,9 +259,7 @@ export default async function SharedDocumentPage(
             href="/"
             className="flex items-center gap-1.5 text-[11.5px] text-[var(--nx-text-muted)] transition-colors hover:text-[var(--nx-text)]"
           >
-            <span className="flex h-4 w-4 items-center justify-center rounded bg-gradient-to-br from-[var(--nx-purple)] to-[var(--nx-accent)]">
-              <Sparkles className="h-2.5 w-2.5 text-white" />
-            </span>
+            <LogoMark className="h-4 w-4" />
             Prepared with <strong className="font-semibold">{COMPANY.product}</strong> by{" "}
             {COMPANY.name}
           </Link>

@@ -933,7 +933,7 @@ function PaymentTab({
         <p className="flex items-start gap-1.5 text-[11px] leading-relaxed text-[var(--nx-text-muted)] sm:col-span-2 lg:col-span-3">
           <Check className="mt-px h-3.5 w-3.5 shrink-0 text-[var(--nx-success)]" />
           These details are printed on the document for your client to pay
-          against. NEXORA does not process payments and never sees a
+          against. Nexus does not process payments and never sees a
           transaction.
         </p>
       </CardBody>

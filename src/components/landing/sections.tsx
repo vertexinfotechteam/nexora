@@ -18,6 +18,7 @@ import {
   Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { LogoMark } from "@/components/brand/logo";
 import { LiveDemoChart, LiveDemoPoll } from "./live-demo";
 import { TEAM, COMPANY } from "@/lib/team";
 
@@ -51,7 +52,7 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
 
           <p className="mt-4 max-w-xl text-[14.5px] leading-relaxed text-[var(--nx-text-muted)]">
             Upload a spreadsheet and describe what you need in plain English.
-            NEXORA profiles the data, runs the calculations, finds what is
+            Nexus profiles the data, runs the calculations, finds what is
             unusual, forecasts what is next — and shows you every step as it
             happens. Every figure is computed from your file. Nothing is
             invented, and anything the AI cannot prove never reaches your screen.
@@ -114,7 +115,7 @@ const FEATURES = [
   {
     icon: Zap,
     title: "One task, a full analysis",
-    body: "Describe what you want once. NEXORA profiles every column, computes the headline measures, breaks them down by your strongest dimensions, hunts for anomalies and fits a forecast — without being asked for each piece separately.",
+    body: "Describe what you want once. Nexus profiles every column, computes the headline measures, breaks them down by your strongest dimensions, hunts for anomalies and fits a forecast — without being asked for each piece separately.",
   },
   {
     icon: Timer,
@@ -251,7 +252,7 @@ const PLANS = [
       "Custom integrations",
     ],
     cta: "Contact sales",
-    href: "mailto:hello@vertexinfotech.com?subject=NEXORA%20AI%20Enterprise",
+    href: "mailto:hello@vertexinfotech.com?subject=Nexus%20AI%20Enterprise",
     highlight: false,
   },
 ];
@@ -540,9 +541,7 @@ export function Footer() {
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
         <div>
           <p className="flex items-center gap-2.5">
-            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--nx-purple)]">
-              <Sparkles className="h-4 w-4 text-white" />
-            </span>
+            <LogoMark className="h-8 w-8" />
             <span className="text-[18px] font-semibold tracking-tight">
               {COMPANY.product}
             </span>

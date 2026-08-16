@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Sparkles } from "lucide-react";
 import { COMPANY } from "@/lib/team";
+import { LogoMark } from "@/components/brand/logo";
 
 /**
  * Split-screen auth shell.
@@ -36,9 +37,7 @@ export default function AuthLayout({
       {/* Form side */}
       <div className="flex flex-col bg-[var(--nx-bg)] px-5 py-8 sm:px-10">
         <Link href="/" className="flex items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--nx-purple)]">
-            <Sparkles className="h-4 w-4 text-white" />
-          </span>
+          <LogoMark className="h-8 w-8" />
           <span className="text-[16px] font-semibold tracking-tight">
             {COMPANY.product}
           </span>

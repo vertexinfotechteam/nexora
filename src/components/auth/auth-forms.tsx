@@ -68,7 +68,7 @@ export function LoginForm({
     <div>
       <h1 className="text-[28px] font-semibold tracking-tight">Welcome back</h1>
       <p className="mt-1.5 mb-6 text-[13.5px] text-[var(--nx-text-muted)]">
-        Sign in to your NEXORA AI account.
+        Sign in to your Nexus account.
       </p>
 
       {resetDone ? (
@@ -141,7 +141,7 @@ export function LoginForm({
         </div>
       ) : (
         <p className="mt-6 text-center text-[13px] text-[var(--nx-text-muted)]">
-          New to NEXORA AI?{" "}
+          New to Nexus?{" "}
           <Link
             href="/signup"
             className="font-semibold text-[var(--nx-purple)] hover:underline"

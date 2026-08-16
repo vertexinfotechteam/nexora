@@ -12,8 +12,16 @@ import "server-only";
  */
 
 function read(name: string): string | undefined {
-  const v = process.env[name];
-  return v && v.trim().length > 0 ? v.trim() : undefined;
+  const direct = process.env[name];
+  if (direct && direct.trim().length > 0) return direct.trim();
+
+  // The product was renamed from NEXORA to Nexus. An existing .env should keep
+  // working, so the old prefix is still accepted as a fallback.
+  if (name.startsWith("NEXUS_")) {
+    const legacy = process.env[name.replace(/^NEXUS_/, "NEXORA_")];
+    if (legacy && legacy.trim().length > 0) return legacy.trim();
+  }
+  return undefined;
 }
 
 export type SupabaseConfig = {
@@ -36,7 +44,7 @@ export function isSupabaseConfigured(): boolean {
 }
 
 /** Where the app persists data when Supabase has not been connected yet. */
-export const LOCAL_DATA_DIR = read("NEXORA_DATA_DIR") ?? ".nexora";
+export const LOCAL_DATA_DIR = read("NEXUS_DATA_DIR") ?? ".nexora";
 
 export type AiProviderId = "anthropic" | "gemini" | "openai" | "ollama";
 
@@ -61,7 +69,7 @@ const DEFAULT_MODELS: Record<AiProviderId, string> = {
  * provider errors, which is what makes the app genuinely provider-independent.
  */
 export function getAvailableAiProviders(): AiProviderConfig[] {
-  const preferred = (read("NEXORA_AI_PROVIDER") ?? "").toLowerCase();
+  const preferred = (read("NEXUS_AI_PROVIDER") ?? "").toLowerCase();
   const found: AiProviderConfig[] = [];
 
   const anthropicKey = read("ANTHROPIC_API_KEY");
@@ -116,14 +124,14 @@ export function getAvailableAiProviders(): AiProviderConfig[] {
 /** Hard ceilings applied to every AI-generated query. Never user-configurable. */
 export const SQL_LIMITS = {
   /** Milliseconds before an analytical query is cancelled. */
-  timeoutMs: Number(read("NEXORA_SQL_TIMEOUT_MS") ?? 15_000),
+  timeoutMs: Number(read("NEXUS_SQL_TIMEOUT_MS") ?? 15_000),
   /** Maximum rows any single query may return to the app. */
-  maxRows: Number(read("NEXORA_SQL_MAX_ROWS") ?? 10_000),
+  maxRows: Number(read("NEXUS_SQL_MAX_ROWS") ?? 10_000),
   /** Maximum rows streamed into a chart payload. */
   maxChartRows: 2_000,
 } as const;
 
 export const UPLOAD_LIMITS = {
-  maxBytes: Number(read("NEXORA_MAX_UPLOAD_BYTES") ?? 100 * 1024 * 1024),
+  maxBytes: Number(read("NEXUS_MAX_UPLOAD_BYTES") ?? 100 * 1024 * 1024),
   allowedExtensions: ["csv", "tsv", "xlsx", "xls", "json", "parquet"] as const,
 } as const;

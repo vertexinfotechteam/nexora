@@ -163,7 +163,7 @@ export async function signUpAction(
    * nothing to do with the user. Creating the account server-side with the
    * email already marked confirmed removes that dependency entirely.
    *
-   * Set NEXORA_REQUIRE_EMAIL_CONFIRMATION=true once real SMTP is configured to
+   * Set NEXUS_REQUIRE_EMAIL_CONFIRMATION=true once real SMTP is configured to
    * go back to the emailed-link flow.
    */
   if (requiresEmailConfirmation()) {
@@ -269,7 +269,8 @@ export async function signUpAction(
 
 /** True when the project should use the emailed confirmation-link flow. */
 function requiresEmailConfirmation(): boolean {
-  return process.env.NEXORA_REQUIRE_EMAIL_CONFIRMATION === "true";
+  return (process.env.NEXUS_REQUIRE_EMAIL_CONFIRMATION ??
+    process.env.NEXORA_REQUIRE_EMAIL_CONFIRMATION) === "true";
 }
 
 /**
