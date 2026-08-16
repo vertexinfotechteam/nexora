@@ -28,6 +28,14 @@ export type ToolCall = {
   id: string;
   name: string;
   input: Record<string, unknown>;
+  /**
+   * Opaque provider token that must be echoed back with the call.
+   *
+   * Gemini 3.x attaches a `thoughtSignature` to every function call and
+   * rejects the next request with 400 if the signature is missing from the
+   * history it is sent. Other providers leave this undefined.
+   */
+  signature?: string;
 };
 
 export type AiMessage =
@@ -233,7 +241,16 @@ function geminiProvider(config: AiProviderConfig): AiProvider {
           const parts: unknown[] = [];
           if (message.text) parts.push({ text: message.text });
           for (const call of message.toolCalls ?? []) {
-            parts.push({ functionCall: { name: call.name, args: call.input } });
+            /*
+             * The thoughtSignature must travel back with the call. Gemini 3.x
+             * rejects the whole request with 400 "Function call is missing a
+             * thought_signature" if the history omits it, which kills the
+             * analysis on the second tool round.
+             */
+            parts.push({
+              functionCall: { name: call.name, args: call.input },
+              ...(call.signature ? { thoughtSignature: call.signature } : {}),
+            });
           }
           return { role: "model", parts };
         }
@@ -294,6 +311,8 @@ function geminiProvider(config: AiProviderConfig): AiProvider {
               text?: string;
               /** Gemini 3.x marks internal reasoning parts with this flag. */
               thought?: boolean;
+              /** Opaque token Gemini 3.x requires back with the call. */
+              thoughtSignature?: string;
               functionCall?: { name: string; args: Record<string, unknown> };
             }[];
           };
@@ -315,6 +334,7 @@ function geminiProvider(config: AiProviderConfig): AiProvider {
           id: `gemini_call_${index}`,
           name: p.functionCall!.name,
           input: p.functionCall!.args ?? {},
+          signature: p.thoughtSignature,
         }));
 
       const finish = data.candidates?.[0]?.finishReason;

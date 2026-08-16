@@ -63,10 +63,24 @@ export async function saveDocument(
   session: Session,
   document: BusinessDocument,
 ): Promise<BusinessDocument> {
+  /*
+   * Ownership always comes from the session, never from the submitted payload.
+   *
+   * The client sends the whole document as JSON, so trusting its
+   * organization_id would let a caller write a row into another tenant's
+   * workspace, and trusting created_by lets a malformed or empty value reach
+   * Postgres as an invalid uuid. Both are overwritten here.
+   *
+   * created_by is preserved on update so the original author is not rewritten
+   * when a colleague edits the document.
+   */
+  const existing = await getDocument(session, document.id);
   const next: BusinessDocument = {
     ...document,
     organization_id: session.organizationId,
+    created_by: existing?.created_by || session.userId,
     updated_at: new Date().toISOString(),
+    created_at: existing?.created_at ?? document.created_at ?? new Date().toISOString(),
   };
 
   if (storeMode() === "local" || !hasServiceClient()) {

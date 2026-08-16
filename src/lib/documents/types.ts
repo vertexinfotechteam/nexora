@@ -76,6 +76,14 @@ export type BusinessDocument = {
   /** Whether to print the signature block. */
   showSignature: boolean;
 
+  /**
+   * Public share token. Null until the owner creates a link; removing it
+   * revokes access immediately.
+   */
+  shareToken?: string | null;
+  shareViewCount?: number;
+  shareLastViewedAt?: string | null;
+
   /** The text the document was built from, kept for provenance. */
   sourceText: string;
   /** How the items were produced. Shown to the user, never invented. */

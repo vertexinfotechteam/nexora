@@ -25,6 +25,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/primitives";
+import { SharePanel } from "./share-panel";
 import { computeDocumentTotals } from "@/lib/documents/totals";
 import { formatMoney, fromMinor, getCurrency, toMinor } from "@/lib/structure/money";
 import {
@@ -401,6 +402,8 @@ export function DocumentStudio({ initial }: { initial: BusinessDocument }) {
             </div>
           </CardBody>
         </Card>
+
+        <SharePanel document={doc} onDocumentChange={patch} />
       </div>
     </div>
   );

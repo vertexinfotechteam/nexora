@@ -53,21 +53,34 @@ export function emptyBranding(organizationId: string): Branding {
 type LocalBrandingRow = Branding & { id: string };
 
 export async function getBranding(session: Session): Promise<Branding> {
+  return getBrandingForOrganization(session.organizationId);
+}
+
+/**
+ * Branding by organization id, without a session.
+ *
+ * Needed by the public share routes: the recipient has no account, but the
+ * document must still carry the sender's logo and signature. Only branding is
+ * exposed this way — nothing else about the workspace.
+ */
+export async function getBrandingForOrganization(
+  organizationId: string,
+): Promise<Branding> {
   if (storeMode() === "local" || !hasServiceClient()) {
     const rows = await findLocal<LocalBrandingRow>(
       COLLECTION,
-      (row) => row.organization_id === session.organizationId,
+      (row) => row.organization_id === organizationId,
     );
-    return rows[0] ?? emptyBranding(session.organizationId);
+    return rows[0] ?? emptyBranding(organizationId);
   }
 
   const { data } = await getServiceClient()
     .from("report_branding")
     .select("*")
-    .eq("organization_id", session.organizationId)
+    .eq("organization_id", organizationId)
     .maybeSingle();
 
-  return (data as Branding) ?? emptyBranding(session.organizationId);
+  return (data as Branding) ?? emptyBranding(organizationId);
 }
 
 export async function saveBranding(
