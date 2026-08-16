@@ -1,26 +1,437 @@
 @import "tailwindcss";
 
+/* =========================================================================
+   NEXORA AI — theme tokens
+   Powered by Vertex Infotech
+
+   Every surface, border and text colour in the product resolves through the
+   semantic tokens below. Nothing hardcodes a hex, which is what lets the whole
+   application switch between light and dark without touching a component.
+
+   Light is the default. `.dark` on <html> switches the palette.
+   ========================================================================= */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Surfaces - warm cream, matching the brand reference */
+  --nx-bg: #faf8f5;
+  --nx-surface: #f7f5f1;
+  --nx-card: #ffffff;
+  --nx-inset: #f5f2ed;
+  --nx-elevated: #efebe4;
+  --nx-elevated-hover: #e7e2d9;
+  --nx-hover: #f4f1ec;
+
+  /* Borders */
+  --nx-border: #e6e1d8;
+  --nx-border-subtle: #f0ece5;
+  --nx-border-strong: #d2ccc0;
+
+  /* Text */
+  --nx-text: #1c1a17;
+  --nx-text-muted: #5c574f;
+  --nx-text-dim: #7a746a;
+  --nx-text-faint: #9a9386;
+
+  /* Brand - deep green primary, warm gold accent */
+  --nx-purple: #0a4a3c;
+  --nx-purple-hover: #0d5c4a;
+  --nx-purple-active: #073b30;
+  --nx-cyan: #0e7490;
+  --nx-accent: #b4762a;
+  --nx-accent-hover: #c9863a;
+  --nx-accent-active: #96611f;
+  --nx-accent-fg: #ffffff;
+
+  /* Status */
+  --nx-success: #157347;
+  --nx-warning: #a96612;
+  --nx-error: #c0392b;
+
+  --nx-success-soft: rgba(21, 115, 71, 0.1);
+  --nx-success-fg: #146c43;
+  --nx-warning-soft: rgba(169, 102, 18, 0.1);
+  --nx-warning-fg: #96611f;
+  --nx-error-soft: rgba(192, 57, 43, 0.09);
+  --nx-error-fg: #a5342a;
+  --nx-purple-soft: rgba(10, 74, 60, 0.09);
+  --nx-purple-fg: #0a4a3c;
+  --nx-cyan-soft: rgba(14, 116, 144, 0.1);
+  --nx-cyan-fg: #0e7490;
+  --nx-accent-soft: rgba(180, 118, 42, 0.1);
+  --nx-accent-soft-strong: rgba(180, 118, 42, 0.16);
+  --nx-accent-fg-on-soft: #96611f;
+
+  --nx-accent-border: rgba(180, 118, 42, 0.35);
+  --nx-accent-border-strong: rgba(180, 118, 42, 0.55);
+  --nx-error-border: rgba(192, 57, 43, 0.32);
+  --nx-error-border-strong: rgba(192, 57, 43, 0.5);
+  --nx-success-border: rgba(21, 115, 71, 0.32);
+
+  /* Categorical series palette */
+  --nx-series-1: #0a4a3c;
+  --nx-series-2: #b4762a;
+  --nx-series-3: #0e7490;
+  --nx-series-4: #6d4d9e;
+  --nx-series-5: #c0392b;
+  --nx-series-6: #157347;
+  --nx-series-7: #8a7320;
+  --nx-series-8: #6b6459;
+  --nx-heat-base: #f2efe9;
+  --nx-heat-rgb: 10, 74, 60;
+  --nx-heat-text-low: #5c574f;
+  --nx-heat-text-high: #ffffff;
+
+  /* Chart + misc */
+  --nx-grid: #ece8e0;
+  --nx-axis: #9a9386;
+  --nx-cursor: rgba(0, 0, 0, 0.035);
+  --nx-scroll-thumb: #d2ccc0;
+  --nx-scroll-thumb-hover: #b9b2a4;
+  --nx-code: #0a4a3c;
+  --nx-shadow: 0 1px 2px rgba(28, 26, 23, 0.04), 0 4px 12px rgba(28, 26, 23, 0.06);
+  --nx-shadow-lg: 0 8px 28px rgba(28, 26, 23, 0.12);
+
+  /* Ambient layer. Light mode keeps it barely-there so the cream stays clean;
+     the same canvas reads these values and simply draws fainter. */
+  --nx-ambient-1: 10, 74, 60;
+  --nx-ambient-2: 180, 118, 42;
+  --nx-ambient-opacity: 0.35;
+  --nx-glass: rgba(255, 255, 255, 0.72);
+  --nx-glass-border: rgba(10, 74, 60, 0.1);
+
+  --nx-radius: 0.625rem;
+}
+
+.dark {
+  /* Premium AI data command centre: deep navy-black ground with purple and
+     cyan as the only chromatic light sources. */
+  --nx-bg: #05070d;
+  --nx-surface: #090d16;
+  --nx-card: #0d1220;
+  --nx-inset: #080c15;
+  --nx-elevated: #141b2c;
+  --nx-elevated-hover: #1b2438;
+  --nx-hover: #111827;
+
+  --nx-border: #1c2438;
+  --nx-border-subtle: #141a29;
+  --nx-border-strong: #2b3550;
+
+  --nx-text: #eef2f9;
+  --nx-text-muted: #8f9bb3;
+  --nx-text-dim: #74809a;
+  --nx-text-faint: #55607a;
+
+  --nx-purple: #7c5cff;
+  --nx-purple-hover: #9078ff;
+  --nx-purple-active: #6a49f5;
+  --nx-cyan: #22d3ee;
+  --nx-accent: #22d3ee;
+  --nx-accent-hover: #4ee0f7;
+  --nx-accent-active: #12b9d4;
+  --nx-accent-fg: #04141a;
+
+  --nx-success: #34d399;
+  --nx-warning: #fbbf24;
+  --nx-error: #f87171;
+
+  --nx-success-soft: rgba(52, 211, 153, 0.13);
+  --nx-success-fg: #6ee7b7;
+  --nx-warning-soft: rgba(251, 191, 36, 0.13);
+  --nx-warning-fg: #fcd34d;
+  --nx-error-soft: rgba(248, 113, 113, 0.13);
+  --nx-error-fg: #fca5a5;
+  --nx-purple-soft: rgba(124, 92, 255, 0.15);
+  --nx-purple-fg: #b3a1ff;
+  --nx-cyan-soft: rgba(34, 211, 238, 0.13);
+  --nx-cyan-fg: #67e8f9;
+  --nx-accent-soft: rgba(34, 211, 238, 0.1);
+  --nx-accent-soft-strong: rgba(34, 211, 238, 0.16);
+  --nx-accent-fg-on-soft: #67e8f9;
+
+  --nx-accent-border: rgba(34, 211, 238, 0.35);
+  --nx-accent-border-strong: rgba(34, 211, 238, 0.5);
+  --nx-error-border: rgba(248, 113, 113, 0.4);
+  --nx-error-border-strong: rgba(248, 113, 113, 0.5);
+  --nx-success-border: rgba(52, 211, 153, 0.4);
+
+  --nx-series-1: #7c5cff;
+  --nx-series-2: #22d3ee;
+  --nx-series-3: #34d399;
+  --nx-series-4: #fbbf24;
+  --nx-series-5: #f472b6;
+  --nx-series-6: #60a5fa;
+  --nx-series-7: #a78bfa;
+  --nx-series-8: #94a3b8;
+  --nx-heat-base: #101728;
+  --nx-heat-rgb: 124, 92, 255;
+  --nx-heat-text-low: #8f9bb3;
+  --nx-heat-text-high: #05070d;
+
+  --nx-grid: #141d31;
+  --nx-axis: #74809a;
+  --nx-cursor: rgba(255, 255, 255, 0.04);
+  --nx-scroll-thumb: #232e46;
+  --nx-scroll-thumb-hover: #313e5c;
+  --nx-code: #a5b4fc;
+  --nx-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --nx-shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.65);
+
+  /* Ambient layer, read by the background canvas. */
+  --nx-ambient-1: 124, 92, 255;
+  --nx-ambient-2: 34, 211, 238;
+  --nx-ambient-opacity: 1;
+  --nx-glass: rgba(13, 18, 32, 0.72);
+  --nx-glass-border: rgba(124, 92, 255, 0.14);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--nx-bg);
+  --color-surface: var(--nx-surface);
+  --color-card: var(--nx-card);
+  --color-inset: var(--nx-inset);
+  --color-elevated: var(--nx-elevated);
+  --color-border: var(--nx-border);
+  --color-foreground: var(--nx-text);
+  --color-muted: var(--nx-text-muted);
+
+  --color-purple: var(--nx-purple);
+  --color-cyan: var(--nx-cyan);
+  --color-success: var(--nx-success);
+  --color-warning: var(--nx-warning);
+  --color-error: var(--nx-error);
+  --color-accent: var(--nx-accent);
+
+  --radius-nx: var(--nx-radius);
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  border-color: var(--nx-border);
+}
+
+html,
+body {
+  height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--nx-bg);
+  color: var(--nx-text);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  font-size: 13px;
+  /* Deliberately NOT transitioned. A transition on background-color whose value
+     comes from a custom property can freeze at the old colour when the variable
+     is swapped, leaving the page light while every child turns dark. Theme
+     switching is instant instead. */
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--nx-scroll-thumb);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--nx-scroll-thumb-hover);
+}
+
+.recharts-wrapper:focus,
+.recharts-surface:focus {
+  outline: none;
+}
+
+@utility nx-card {
+  background: var(--nx-card);
+  border: 1px solid var(--nx-border);
+  border-radius: var(--nx-radius);
+}
+
+@utility nx-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--nx-text-muted);
+}
+
+@keyframes nx-pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--nx-accent) 55%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 6px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+@utility nx-live-dot {
+  animation: nx-pulse-ring 1.6s ease-out infinite;
+}
+
+@keyframes nx-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@utility nx-enter {
+  animation: nx-fade-up 0.22s ease-out both;
+}
+
+/* ---------------------------------------------------------------------------
+   Landing page helpers
+   --------------------------------------------------------------------------- */
+
+@utility nx-hero-grid {
+  background-image:
+    linear-gradient(to right, var(--nx-border-subtle) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--nx-border-subtle) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
+}
+
+@utility nx-gradient-text {
+  background: linear-gradient(
+    100deg,
+    var(--nx-text) 0%,
+    var(--nx-purple) 55%,
+    var(--nx-accent) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@keyframes nx-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@utility nx-float {
+  animation: nx-float 5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Ambient AI background
+   The canvas draws particles and links; these utilities provide the static
+   layers underneath it — a slow-drifting grid and two ambient glows.
+   --------------------------------------------------------------------------- */
+
+@keyframes nx-grid-drift {
+  from {
+    background-position: 0 0, 0 0;
+  }
+  to {
+    background-position: 60px 60px, 60px 60px;
+  }
+}
+
+@utility nx-ambient-grid {
+  background-image:
+    linear-gradient(to right, var(--nx-grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--nx-grid) 1px, transparent 1px);
+  background-size: 60px 60px;
+  /* Fades the grid out toward the bottom so content never sits on hard lines. */
+  mask-image: radial-gradient(ellipse 100% 70% at 50% 0%, #000 30%, transparent 85%);
+  animation: nx-grid-drift 40s linear infinite;
+  opacity: var(--nx-ambient-opacity);
+}
+
+@keyframes nx-glow-a {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(4%, 6%, 0) scale(1.12);
+  }
+}
+
+@keyframes nx-glow-b {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1.08);
+  }
+  50% {
+    transform: translate3d(-5%, -4%, 0) scale(1);
+  }
+}
+
+@utility nx-glow-purple {
+  background: radial-gradient(
+    circle,
+    rgba(var(--nx-ambient-1), 0.5) 0%,
+    rgba(var(--nx-ambient-1), 0) 70%
+  );
+  animation: nx-glow-a 26s ease-in-out infinite;
+  opacity: var(--nx-ambient-opacity);
+}
+
+@utility nx-glow-cyan {
+  background: radial-gradient(
+    circle,
+    rgba(var(--nx-ambient-2), 0.42) 0%,
+    rgba(var(--nx-ambient-2), 0) 70%
+  );
+  animation: nx-glow-b 32s ease-in-out infinite;
+  opacity: var(--nx-ambient-opacity);
+}
+
+/* Dark glass surface for cards that sit over the ambient layer. */
+@utility nx-glass {
+  background: var(--nx-glass);
+  border: 1px solid var(--nx-glass-border);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+}
+
+/* Thin scanning line used sparingly on live panels. */
+@keyframes nx-scan {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  12%,
+  88% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(2000%);
+    opacity: 0;
+  }
+}
+
+@utility nx-scanline {
+  animation: nx-scan 9s ease-in-out infinite;
 }

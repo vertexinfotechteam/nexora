@@ -39,3 +39,19 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local-mode data store
+/.nexora
+
+# Test artefacts produced by scripts/ during verification
+/report*.pdf
+/report*.xlsx
+/pdfpages
+/pdfbranded
+/test-logo.png
+/test-signature.png
+/stream.txt
+/req.json
+/rid.txt
+/dsid.txt
+/upload-result.json

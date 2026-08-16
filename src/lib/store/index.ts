@@ -1,0 +1,721 @@
+import "server-only";
+
+import { randomUUID } from "node:crypto";
+import { isSupabaseConfigured } from "@/lib/env";
+import { getServerSupabase } from "@/lib/supabase/server";
+import { getServiceClient, hasServiceClient } from "@/lib/supabase/admin";
+import {
+  deleteLocal,
+  findLocal,
+  insertLocal,
+  readCollection,
+  updateLocal,
+} from "./local";
+import type {
+  Anomaly,
+  AnalysisJob,
+  AnalysisResult,
+  AuditEntry,
+  Dataset,
+  DatasetColumn,
+  DatasetFile,
+  DatasetProfile,
+  Forecast,
+  Recommendation,
+  Report,
+  Session,
+} from "./types";
+
+/**
+ * Single data-access surface for the app.
+ *
+ * In Supabase mode every read and write goes through the *user's* client, so
+ * RLS is the enforcement point — a bug in this file cannot leak another
+ * tenant's rows. The service-role client is used only for audit logging, which
+ * users must not be able to write directly.
+ */
+
+export function storeMode(): "supabase" | "local" {
+  return isSupabaseConfigured() ? "supabase" : "local";
+}
+
+async function supabaseOrThrow() {
+  const client = await getServerSupabase();
+  if (!client) throw new Error("Supabase is not configured.");
+  return client;
+}
+
+export function newId(): string {
+  return randomUUID();
+}
+
+function nowIso(): string {
+  return new Date().toISOString();
+}
+
+// ---------------------------------------------------------------------------
+// Datasets
+// ---------------------------------------------------------------------------
+
+export async function createDataset(
+  session: Session,
+  input: Pick<Dataset, "name" | "description" | "file_type" | "size_bytes">,
+): Promise<Dataset> {
+  const row: Dataset = {
+    id: newId(),
+    organization_id: session.organizationId,
+    owner_id: session.userId,
+    name: input.name,
+    description: input.description ?? null,
+    status: "uploading",
+    file_type: input.file_type ?? null,
+    row_count: null,
+    column_count: null,
+    size_bytes: input.size_bytes ?? null,
+    quality_score: null,
+    last_analyzed_at: null,
+    error_message: null,
+    created_at: nowIso(),
+    updated_at: nowIso(),
+  };
+
+  if (storeMode() === "local") return insertLocal("datasets", row);
+
+  const client = await supabaseOrThrow();
+  const { data, error } = await client
+    .from("datasets")
+    .insert(row)
+    .select()
+    .single();
+  if (error) throw new Error(`Could not create dataset: ${error.message}`);
+  return data as Dataset;
+}
+
+export async function updateDataset(
+  session: Session,
+  id: string,
+  patch: Partial<Dataset>,
+): Promise<void> {
+  const withStamp = { ...patch, updated_at: nowIso() };
+  if (storeMode() === "local") {
+    await updateLocal<Dataset>("datasets", id, withStamp);
+    return;
+  }
+  const client = await supabaseOrThrow();
+  const { error } = await client
+    .from("datasets")
+    .update(withStamp)
+    .eq("id", id)
+    .eq("organization_id", session.organizationId);
+  if (error) throw new Error(`Could not update dataset: ${error.message}`);
+}
+
+export async function listDatasets(session: Session): Promise<Dataset[]> {
+  if (storeMode() === "local") {
+    const rows = await findLocal<Dataset>(
+      "datasets",
+      (d) =>
+        d.organization_id === session.organizationId && d.status !== "archived",
+    );
+    return rows.sort((a, b) => b.created_at.localeCompare(a.created_at));
+  }
+  const client = await supabaseOrThrow();
+  const { data, error } = await client
+    .from("datasets")
+    .select("*")
+    .neq("status", "archived")
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(`Could not list datasets: ${error.message}`);
+  return (data ?? []) as Dataset[];
+}
+
+export async function getDataset(
+  session: Session,
+  id: string,
+): Promise<Dataset | null> {
+  if (storeMode() === "local") {
+    const rows = await findLocal<Dataset>(
+      "datasets",
+      (d) => d.id === id && d.organization_id === session.organizationId,
+    );
+    return rows[0] ?? null;
+  }
+  const client = await supabaseOrThrow();
+  const { data, error } = await client
+    .from("datasets")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw new Error(`Could not load dataset: ${error.message}`);
+  return (data as Dataset) ?? null;
+}
+
+export async function deleteDataset(
+  session: Session,
+  id: string,
+): Promise<void> {
+  if (storeMode() === "local") {
+    await deleteLocal("datasets", (row) => row.id === id);
+    await deleteLocal("dataset_files", (row) => row.dataset_id === id);
+    await deleteLocal("dataset_columns", (row) => row.dataset_id === id);
+    await deleteLocal("dataset_profiles", (row) => row.dataset_id === id);
+    return;
+  }
+  const client = await supabaseOrThrow();
+  // Child rows cascade via foreign keys.
+  const { error } = await client
+    .from("datasets")
+    .delete()
+    .eq("id", id)
+    .eq("organization_id", session.organizationId);
+  if (error) throw new Error(`Could not delete dataset: ${error.message}`);
+}
+
+// ---------------------------------------------------------------------------
+// Dataset files / columns / profiles
+// ---------------------------------------------------------------------------
+
+export async function createDatasetFile(
+  session: Session,
+  input: Omit<DatasetFile, "id" | "created_at" | "organization_id">,
+): Promise<DatasetFile> {
+  const row: DatasetFile = {
+    ...input,
+    id: newId(),
+    organization_id: session.organizationId,
+    created_at: nowIso(),
+  };
+  if (storeMode() === "local") return insertLocal("dataset_files", row);
+
+  const client = await supabaseOrThrow();
+  const { data, error } = await client
+    .from("dataset_files")
+    .insert(row)
+    .select()
+    .single();
+  if (error) throw new Error(`Could not record file: ${error.message}`);
+  return data as DatasetFile;
+}
+
+export async function getDatasetFile(
+  session: Session,
+  datasetId: string,
+): Promise<DatasetFile | null> {
+  if (storeMode() === "local") {
+    const rows = await findLocal<DatasetFile>(
+      "dataset_files",
+      (f) =>
+        f.dataset_id === datasetId &&
+        f.organization_id === session.organizationId,
+    );
+    return rows[0] ?? null;
+  }
+  const client = await supabaseOrThrow();
+  const { data, error } = await client
+    .from("dataset_files")
+    .select("*")
+    .eq("dataset_id", datasetId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(`Could not load file: ${error.message}`);
+  return (data as DatasetFile) ?? null;
+}
+
+export async function replaceDatasetColumns(
+  session: Session,
+  datasetId: string,
+  columns: Omit<DatasetColumn, "id" | "organization_id" | "dataset_id">[],
+): Promise<void> {
+  const rows: DatasetColumn[] = columns.map((column) => ({
+    ...column,
+    id: newId(),
+    dataset_id: datasetId,
+    organization_id: session.organizationId,
+  }));
+
+  if (storeMode() === "local") {
+    await deleteLocal("dataset_columns", (row) => row.dataset_id === datasetId);
+    for (const row of rows) await insertLocal("dataset_columns", row);
+    return;
+  }
+  const client = await supabaseOrThrow();
+  await client.from("dataset_columns").delete().eq("dataset_id", datasetId);
+  const { error } = await client.from("dataset_columns").insert(rows);
+  if (error) throw new Error(`Could not save schema: ${error.message}`);
+}
+
+export async function listDatasetColumns(
+  session: Session,
+  datasetId: string,
+): Promise<DatasetColumn[]> {
+  if (storeMode() === "local") {
+    const rows = await findLocal<DatasetColumn>(
+      "dataset_columns",
+      (c) =>
+        c.dataset_id === datasetId &&
+        c.organization_id === session.organizationId,
+    );
+    return rows.sort((a, b) => a.position - b.position);
+  }
+  const client = await supabaseOrThrow();
+  const { data, error } = await client
+    .from("dataset_columns")
+    .select("*")
+    .eq("dataset_id", datasetId)
+    .order("position");
+  if (error) throw new Error(`Could not load schema: ${error.message}`);
+  return (data ?? []) as DatasetColumn[];
+}
+
+export async function replaceDatasetProfiles(
+  session: Session,
+  datasetId: string,
+  profiles: Omit<DatasetProfile, "id" | "organization_id" | "dataset_id">[],
+): Promise<void> {
+  const rows: DatasetProfile[] = profiles.map((profile) => ({
+    ...profile,
+    id: newId(),
+    dataset_id: datasetId,
+    organization_id: session.organizationId,
+  }));
+
+  if (storeMode() === "local") {
+    await deleteLocal("dataset_profiles", (row) => row.dataset_id === datasetId);
+    for (const row of rows) await insertLocal("dataset_profiles", row);
+    return;
+  }
+  const client = await supabaseOrThrow();
+  await client.from("dataset_profiles").delete().eq("dataset_id", datasetId);
+  const { error } = await client.from("dataset_profiles").insert(rows);
+  if (error) throw new Error(`Could not save profile: ${error.message}`);
+}
+
+export async function listDatasetProfiles(
+  session: Session,
+  datasetId: string,
+): Promise<DatasetProfile[]> {
+  if (storeMode() === "local") {
+    return findLocal<DatasetProfile>(
+      "dataset_profiles",
+      (p) =>
+        p.dataset_id === datasetId &&
+        p.organization_id === session.organizationId,
+    );
+  }
+  const client = await supabaseOrThrow();
+  const { data, error } = await client
+    .from("dataset_profiles")
+    .select("*")
+    .eq("dataset_id", datasetId);
+  if (error) throw new Error(`Could not load profile: ${error.message}`);
+  return (data ?? []) as DatasetProfile[];
+}
+
+// ---------------------------------------------------------------------------
+// Analysis jobs and results
+// ---------------------------------------------------------------------------
+
+export async function createJob(
+  session: Session,
+  input: { datasetId: string | null; question: string },
+): Promise<AnalysisJob> {
+  const row: AnalysisJob = {
+    id: newId(),
+    organization_id: session.organizationId,
+    dataset_id: input.datasetId,
+    user_id: session.userId,
+    question: input.question,
+    status: "queued",
+    provider: null,
+    model: null,
+    steps: [],
+    started_at: null,
+    finished_at: null,
+    duration_ms: null,
+    error_message: null,
+    created_at: nowIso(),
+  };
+  if (storeMode() === "local") return insertLocal("analysis_jobs", row);
+
+  const client = await supabaseOrThrow();
+  const { data, error } = await client
+    .from("analysis_jobs")
+    .insert(row)
+    .select()
+    .single();
+  if (error) throw new Error(`Could not start analysis: ${error.message}`);
+  return data as AnalysisJob;
+}
+
+export async function updateJob(
+  session: Session,
+  id: string,
+  patch: Partial<AnalysisJob>,
+): Promise<void> {
+  if (storeMode() === "local") {
+    await updateLocal<AnalysisJob>("analysis_jobs", id, patch);
+    return;
+  }
+  const client = await supabaseOrThrow();
+  const { error } = await client
+    .from("analysis_jobs")
+    .update(patch)
+    .eq("id", id)
+    .eq("organization_id", session.organizationId);
+  if (error) throw new Error(`Could not update analysis: ${error.message}`);
+}
+
+export async function getJob(
+  session: Session,
+  id: string,
+): Promise<AnalysisJob | null> {
+  if (storeMode() === "local") {
+    const rows = await findLocal<AnalysisJob>(
+      "analysis_jobs",
+      (j) => j.id === id && j.organization_id === session.organizationId,
+    );
+    return rows[0] ?? null;
+  }
+  const client = await supabaseOrThrow();
+  const { data, error } = await client
+    .from("analysis_jobs")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw new Error(`Could not load analysis: ${error.message}`);
+  return (data as AnalysisJob) ?? null;
+}
+
+export async function listJobs(
+  session: Session,
+  limit = 20,
+): Promise<AnalysisJob[]> {
+  if (storeMode() === "local") {
+    const rows = await findLocal<AnalysisJob>(
+      "analysis_jobs",
+      (j) => j.organization_id === session.organizationId,
+    );
+    return rows
+      .sort((a, b) => b.created_at.localeCompare(a.created_at))
+      .slice(0, limit);
+  }
+  const client = await supabaseOrThrow();
+  const { data, error } = await client
+    .from("analysis_jobs")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(`Could not list analyses: ${error.message}`);
+  return (data ?? []) as AnalysisJob[];
+}
+
+export async function createResults(
+  session: Session,
+  jobId: string,
+  results: Omit<
+    AnalysisResult,
+    "id" | "job_id" | "organization_id" | "created_at"
+  >[],
+): Promise<AnalysisResult[]> {
+  const rows: AnalysisResult[] = results.map((result) => ({
+    ...result,
+    id: newId(),
+    job_id: jobId,
+    organization_id: session.organizationId,
+    created_at: nowIso(),
+  }));
+  if (rows.length === 0) return [];
+
+  if (storeMode() === "local") {
+    for (const row of rows) await insertLocal("analysis_results", row);
+    return rows;
+  }
+  const client = await supabaseOrThrow();
+  const { error } = await client.from("analysis_results").insert(rows);
+  if (error) throw new Error(`Could not save results: ${error.message}`);
+  return rows;
+}
+
+export async function listResults(
+  session: Session,
+  jobId: string,
+): Promise<AnalysisResult[]> {
+  if (storeMode() === "local") {
+    return findLocal<AnalysisResult>(
+      "analysis_results",
+      (r) =>
+        r.job_id === jobId && r.organization_id === session.organizationId,
+    );
+  }
+  const client = await supabaseOrThrow();
+  const { data, error } = await client
+    .from("analysis_results")
+    .select("*")
+    .eq("job_id", jobId)
+    .order("created_at");
+  if (error) throw new Error(`Could not load results: ${error.message}`);
+  return (data ?? []) as AnalysisResult[];
+}
+
+// ---------------------------------------------------------------------------
+// Insights
+// ---------------------------------------------------------------------------
+
+export async function saveAnomalies(
+  session: Session,
+  anomalies: Omit<Anomaly, "id" | "organization_id" | "created_at">[],
+): Promise<Anomaly[]> {
+  const rows: Anomaly[] = anomalies.map((anomaly) => ({
+    ...anomaly,
+    id: newId(),
+    organization_id: session.organizationId,
+    created_at: nowIso(),
+  }));
+  if (rows.length === 0) return [];
+
+  if (storeMode() === "local") {
+    for (const row of rows) await insertLocal("anomalies", row);
+    return rows;
+  }
+  const client = await supabaseOrThrow();
+  const { error } = await client.from("anomalies").insert(rows);
+  if (error) throw new Error(`Could not save anomalies: ${error.message}`);
+  return rows;
+}
+
+export async function listAnomalies(
+  session: Session,
+  limit = 50,
+): Promise<Anomaly[]> {
+  if (storeMode() === "local") {
+    const rows = await findLocal<Anomaly>(
+      "anomalies",
+      (a) => a.organization_id === session.organizationId,
+    );
+    return rows
+      .sort((a, b) => b.created_at.localeCompare(a.created_at))
+      .slice(0, limit);
+  }
+  const client = await supabaseOrThrow();
+  const { data, error } = await client
+    .from("anomalies")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(`Could not list anomalies: ${error.message}`);
+  return (data ?? []) as Anomaly[];
+}
+
+export async function saveForecast(
+  session: Session,
+  forecast: Omit<Forecast, "id" | "organization_id" | "created_at">,
+): Promise<Forecast> {
+  const row: Forecast = {
+    ...forecast,
+    id: newId(),
+    organization_id: session.organizationId,
+    created_at: nowIso(),
+  };
+  if (storeMode() === "local") return insertLocal("forecasts", row);
+
+  const client = await supabaseOrThrow();
+  const { data, error } = await client
+    .from("forecasts")
+    .insert(row)
+    .select()
+    .single();
+  if (error) throw new Error(`Could not save forecast: ${error.message}`);
+  return data as Forecast;
+}
+
+export async function listForecasts(
+  session: Session,
+  limit = 20,
+): Promise<Forecast[]> {
+  if (storeMode() === "local") {
+    const rows = await findLocal<Forecast>(
+      "forecasts",
+      (f) => f.organization_id === session.organizationId,
+    );
+    return rows
+      .sort((a, b) => b.created_at.localeCompare(a.created_at))
+      .slice(0, limit);
+  }
+  const client = await supabaseOrThrow();
+  const { data, error } = await client
+    .from("forecasts")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(`Could not list forecasts: ${error.message}`);
+  return (data ?? []) as Forecast[];
+}
+
+export async function saveRecommendations(
+  session: Session,
+  recommendations: Omit<
+    Recommendation,
+    "id" | "organization_id" | "created_at"
+  >[],
+): Promise<Recommendation[]> {
+  const rows: Recommendation[] = recommendations.map((recommendation) => ({
+    ...recommendation,
+    id: newId(),
+    organization_id: session.organizationId,
+    created_at: nowIso(),
+  }));
+  if (rows.length === 0) return [];
+
+  if (storeMode() === "local") {
+    for (const row of rows) await insertLocal("recommendations", row);
+    return rows;
+  }
+  const client = await supabaseOrThrow();
+  const { error } = await client.from("recommendations").insert(rows);
+  if (error) {
+    throw new Error(`Could not save recommendations: ${error.message}`);
+  }
+  return rows;
+}
+
+export async function listRecommendations(
+  session: Session,
+  limit = 50,
+): Promise<Recommendation[]> {
+  if (storeMode() === "local") {
+    const rows = await findLocal<Recommendation>(
+      "recommendations",
+      (r) => r.organization_id === session.organizationId,
+    );
+    return rows
+      .sort((a, b) => b.created_at.localeCompare(a.created_at))
+      .slice(0, limit);
+  }
+  const client = await supabaseOrThrow();
+  const { data, error } = await client
+    .from("recommendations")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) {
+    throw new Error(`Could not list recommendations: ${error.message}`);
+  }
+  return (data ?? []) as Recommendation[];
+}
+
+// ---------------------------------------------------------------------------
+// Reports
+// ---------------------------------------------------------------------------
+
+export async function saveReport(
+  session: Session,
+  report: Omit<Report, "id" | "organization_id" | "created_by" | "created_at">,
+): Promise<Report> {
+  const row: Report = {
+    ...report,
+    id: newId(),
+    organization_id: session.organizationId,
+    created_by: session.userId,
+    created_at: nowIso(),
+  };
+  if (storeMode() === "local") return insertLocal("reports", row);
+
+  const client = await supabaseOrThrow();
+  const { data, error } = await client
+    .from("reports")
+    .insert(row)
+    .select()
+    .single();
+  if (error) throw new Error(`Could not save report: ${error.message}`);
+  return data as Report;
+}
+
+export async function getReport(
+  session: Session,
+  id: string,
+): Promise<Report | null> {
+  if (storeMode() === "local") {
+    const rows = await findLocal<Report>(
+      "reports",
+      (r) => r.id === id && r.organization_id === session.organizationId,
+    );
+    return rows[0] ?? null;
+  }
+  const client = await supabaseOrThrow();
+  const { data, error } = await client
+    .from("reports")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw new Error(`Could not load report: ${error.message}`);
+  return (data as Report) ?? null;
+}
+
+export async function listReports(
+  session: Session,
+  limit = 50,
+): Promise<Report[]> {
+  if (storeMode() === "local") {
+    const rows = await findLocal<Report>(
+      "reports",
+      (r) => r.organization_id === session.organizationId,
+    );
+    return rows
+      .sort((a, b) => b.created_at.localeCompare(a.created_at))
+      .slice(0, limit);
+  }
+  const client = await supabaseOrThrow();
+  const { data, error } = await client
+    .from("reports")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(`Could not list reports: ${error.message}`);
+  return (data ?? []) as Report[];
+}
+
+// ---------------------------------------------------------------------------
+// Audit log — append-only, never readable or writable by the client directly.
+// ---------------------------------------------------------------------------
+
+export async function audit(entry: AuditEntry): Promise<void> {
+  const row = {
+    id: newId(),
+    organization_id: entry.organization_id,
+    user_id: entry.user_id,
+    action: entry.action,
+    resource_type: entry.resource_type ?? null,
+    resource_id: entry.resource_id ?? null,
+    ip_address: entry.ip_address ?? null,
+    user_agent: entry.user_agent ?? null,
+    metadata: entry.metadata ?? {},
+    created_at: nowIso(),
+  };
+
+  try {
+    if (storeMode() === "local" || !hasServiceClient()) {
+      await insertLocal("audit_logs", row);
+      return;
+    }
+    await getServiceClient().from("audit_logs").insert(row);
+  } catch (error) {
+    // Audit failures must never break the user-facing request, but they must
+    // be visible in the server log.
+    console.error("[audit] failed to record entry", entry.action, error);
+  }
+}
+
+export async function readAuditLog(limit = 100) {
+  if (storeMode() === "local") {
+    const rows = await readCollection<Record<string, unknown>>("audit_logs");
+    return rows.slice(-limit).reverse();
+  }
+  const client = await supabaseOrThrow();
+  const { data } = await client
+    .from("audit_logs")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  return data ?? [];
+}
