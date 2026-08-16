@@ -636,9 +636,15 @@ create policy profiles_update_self on public.profiles
   for update using (user_id = auth.uid()) with check (user_id = auth.uid());
 
 -- organizations --------------------------------------------------------------
+/* Members can read their organization — and so can whoever created it.
+   Without the created_by arm there is a chicken-and-egg at sign-up: the
+   creator is not a member until the membership row exists, so any statement
+   that returns the new organization row (an INSERT ... RETURNING, which is
+   what PostgREST issues for .insert().select()) is rejected with 42501 even
+   though the insert itself was allowed. */
 drop policy if exists organizations_select on public.organizations;
 create policy organizations_select on public.organizations
-  for select using (public.is_org_member(id));
+  for select using (public.is_org_member(id) or created_by = auth.uid());
 
 drop policy if exists organizations_insert on public.organizations;
 create policy organizations_insert on public.organizations

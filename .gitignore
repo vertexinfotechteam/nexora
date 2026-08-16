@@ -75,3 +75,9 @@ next-env.d.ts
 /rid.txt
 /dsid.txt
 /upload-result.json
+
+# Ad-hoc diagnostic scripts
+rlsprobe.mjs
+verify.mjs
+probe.mjs
+sup.json

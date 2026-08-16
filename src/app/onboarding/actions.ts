@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { audit } from "@/lib/store";
-import { slugify } from "@/lib/utils";
+import { provisionWorkspace } from "@/lib/auth/provision";
 import type { AuthState } from "@/lib/auth/actions";
 
 const schema = z.object({
@@ -51,65 +51,23 @@ export async function completeOnboardingAction(
 
   const { username, displayName, workspaceName } = parsed.data;
 
-  const { error: profileError } = await supabase.from("profiles").upsert(
-    {
-      user_id: user.id,
-      username,
-      display_name: displayName,
-    },
-    { onConflict: "user_id" },
-  );
+  // Profile, organization and owner membership are created together by the
+  // provisioning helper. Doing it in one privileged step avoids the RLS
+  // bootstrap deadlock: the creator cannot read the organization until they
+  // are a member, and cannot become a member until the organization is
+  // readable.
+  const result = await provisionWorkspace({
+    userId: user.id,
+    username,
+    displayName,
+    businessName: workspaceName,
+  });
 
-  if (profileError) {
-    return {
-      error: profileError.message.includes("profiles_username_key")
-        ? "That username is taken. Choose another."
-        : "Your profile could not be saved. Try again.",
-    };
+  if (!result.ok) {
+    return { error: result.error };
   }
 
-  // Slug must be unique across all workspaces; add a short suffix on collision.
-  const baseSlug = slugify(workspaceName).replace(/_/g, "-") || "workspace";
-  let slug = baseSlug;
-  let organizationId: string | null = null;
-
-  for (let attempt = 0; attempt < 5 && !organizationId; attempt++) {
-    const { data, error } = await supabase
-      .from("organizations")
-      .insert({ name: workspaceName, slug, created_by: user.id })
-      .select("id")
-      .single();
-
-    if (!error && data) {
-      organizationId = data.id as string;
-      break;
-    }
-    if (error && !error.message.includes("organizations_slug_key")) {
-      return { error: "The workspace could not be created. Try again." };
-    }
-    slug = `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`;
-  }
-
-  if (!organizationId) {
-    return { error: "Could not find an available workspace name. Try a different one." };
-  }
-
-  const { error: memberError } = await supabase
-    .from("organization_members")
-    .insert({
-      organization_id: organizationId,
-      user_id: user.id,
-      role: "owner",
-    });
-
-  if (memberError) {
-    return { error: "The workspace was created but access could not be granted." };
-  }
-
-  await supabase
-    .from("profiles")
-    .update({ onboarded_at: new Date().toISOString() })
-    .eq("user_id", user.id);
+  const organizationId = result.organizationId;
 
   await audit({
     organization_id: organizationId,

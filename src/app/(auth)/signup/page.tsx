@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { isSupabaseConfigured } from "@/lib/env";
 import { oauthSignInAction, signUpAction } from "@/lib/auth/actions";
-import { SignupForm } from "@/components/auth/auth-forms";
+import { SignupForm } from "@/components/auth/signup-form";
 
 export const metadata: Metadata = { title: "Create account" };
 

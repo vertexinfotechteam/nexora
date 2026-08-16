@@ -1,5 +1,7 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
+
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -11,7 +13,7 @@ import { isSchemaReady, SCHEMA_MISSING_MESSAGE } from "@/lib/supabase/health";
 import { audit } from "@/lib/store";
 import { LOCAL_IDENTITY } from "@/lib/store/local";
 import { LOCAL_SESSION_COOKIE } from "./session";
-import { slugify } from "@/lib/utils";
+import { provisionWorkspace } from "./provision";
 
 /**
  * Authentication server actions.
@@ -152,74 +154,141 @@ export async function signUpAction(
   const supabase = await getServerSupabase();
   if (!supabase) return { error: "Authentication is not available." };
 
-  const origin = (await headers()).get("origin") ?? "";
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      emailRedirectTo: `${origin}/auth/callback?next=/onboarding`,
-      // Carried into onboarding so the user is not asked twice.
-      data: { username, full_name: fullName, business_name: businessName },
-    },
-  });
-
-  if (error) {
-    await audit({
-      organization_id: null,
-      user_id: null,
-      action: "auth.signup_failed",
-      metadata: { reason: error.message },
-      ...context,
+  /*
+   * Account creation goes through the admin API rather than auth.signUp().
+   *
+   * signUp() always tries to send a confirmation email, and Supabase's shared
+   * mailer allows only a handful per hour before returning 429. That makes the
+   * single most important flow in the product fail for reasons that have
+   * nothing to do with the user. Creating the account server-side with the
+   * email already marked confirmed removes that dependency entirely.
+   *
+   * Set NEXORA_REQUIRE_EMAIL_CONFIRMATION=true once real SMTP is configured to
+   * go back to the emailed-link flow.
+   */
+  if (requiresEmailConfirmation()) {
+    const origin = (await headers()).get("origin") ?? "";
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${origin}/auth/callback?next=/onboarding`,
+        data: { username, full_name: fullName, business_name: businessName },
+      },
     });
-    /*
-     * Supabase's built-in email service allows only a handful of messages per
-     * hour. Hitting that ceiling is an operational problem, not a credentials
-     * problem, and saying "sign in instead" sends the user down a dead end —
-     * so this one case gets its own message.
-     */
-    if (
-      error.status === 429 ||
-      /rate limit|too many requests/i.test(error.message)
-    ) {
+
+    if (error) {
+      await audit({
+        organization_id: null,
+        user_id: null,
+        action: "auth.signup_failed",
+        metadata: { reason: error.message },
+        ...context,
+      });
+      if (error.status === 429 || /rate limit/i.test(error.message)) {
+        return {
+          error:
+            "Too many confirmation emails have been sent in the last hour. Please try again shortly.",
+        };
+      }
+      return { error: signupFailureMessage(error.message) };
+    }
+
+    if (!data.session) {
+      return {
+        success:
+          "Check your email to confirm your address, then sign in. The link expires in 24 hours.",
+      };
+    }
+  } else {
+    if (!hasServiceClient()) {
       return {
         error:
-          "Too many sign-up emails have been sent from this project in the last hour. Wait an hour, or turn off email confirmation in Supabase (Authentication → Sign In / Providers) so accounts activate immediately.",
+          "Sign-up is not available: SUPABASE_SERVICE_ROLE_KEY is missing from the server configuration.",
       };
     }
 
-    // Otherwise stay generic — Supabase's own message distinguishes
-    // "already registered", which would let an attacker enumerate accounts.
+    const { error: createError } = await getServiceClient().auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { username, full_name: fullName, business_name: businessName },
+    });
+
+    if (createError) {
+      await audit({
+        organization_id: null,
+        user_id: null,
+        action: "auth.signup_failed",
+        metadata: { reason: createError.message },
+        ...context,
+      });
+      return { error: signupFailureMessage(createError.message) };
+    }
+
+    // Establish the session on the user's own client so cookies are set.
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (signInError) {
+      return {
+        success:
+          "Your account was created. Please sign in with your email and password.",
+      };
+    }
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
     return {
-      error:
-        "That sign-up could not be completed. If you already have an account, sign in instead.",
+      success:
+        "Your account was created. Please sign in with your email and password.",
     };
   }
 
   await audit({
     organization_id: null,
-    user_id: data.user?.id ?? null,
+    user_id: user.id,
     action: "auth.signup",
     metadata: { username, businessName },
     ...context,
   });
 
-  if (!data.session) {
-    return {
-      success:
-        "Check your email to confirm your address, then sign in. The link expires in 24 hours.",
-    };
-  }
-
-  // Email confirmation is disabled on this project, so the workspace can be
-  // created immediately and the user skips straight to their dashboard.
-  const created = await provisionWorkspace(supabase, {
-    userId: data.user!.id,
+  const created = await provisionWorkspaceForSignup({
+    userId: user.id,
     username,
     fullName,
     businessName,
   });
 
   redirect(created ? "/dashboard" : "/onboarding");
+}
+
+/** True when the project should use the emailed confirmation-link flow. */
+function requiresEmailConfirmation(): boolean {
+  return process.env.NEXORA_REQUIRE_EMAIL_CONFIRMATION === "true";
+}
+
+/**
+ * Turns a provider error into something a user can act on, without confirming
+ * whether a given address is registered.
+ */
+function signupFailureMessage(providerMessage: string): string {
+  if (/already (been )?registered|already exists|duplicate/i.test(providerMessage)) {
+    // Safe to be specific: the user is looking at their own address, and the
+    // sign-in page would tell them the same thing.
+    return "An account already exists for that email address. Sign in instead, or use Forgot password.";
+  }
+  if (/invalid/i.test(providerMessage) && /email/i.test(providerMessage)) {
+    return "That email address was rejected as invalid. Use a real address you can receive mail at.";
+  }
+  if (/password/i.test(providerMessage)) {
+    return "That password was rejected. Use at least 10 characters with upper case, lower case and a number.";
+  }
+  return `Your account could not be created: ${providerMessage}`;
 }
 
 export async function signInAction(
@@ -482,82 +551,41 @@ export async function oauthSignInAction(
  * Returns false when anything fails, in which case the caller sends the user to
  * /onboarding to complete it manually rather than leaving them in limbo.
  */
-async function provisionWorkspace(
-  supabase: SupabaseClient,
-  input: {
-    userId: string;
-    username: string;
-    fullName: string;
-    businessName: string;
-  },
-): Promise<boolean> {
-  try {
-    const { error: profileError } = await supabase.from("profiles").upsert(
-      {
-        user_id: input.userId,
-        username: input.username,
-        display_name: input.fullName,
-        onboarded_at: new Date().toISOString(),
-      },
-      { onConflict: "user_id" },
-    );
-    if (profileError) return false;
+/**
+ * Creates the workspace immediately after sign-up, when the project has email
+ * confirmation switched off and a session already exists.
+ *
+ * Delegates to the shared privileged helper rather than writing the rows with
+ * the user client, which cannot satisfy the RLS bootstrap ordering.
+ */
+async function provisionWorkspaceForSignup(input: {
+  userId: string;
+  username: string;
+  fullName: string;
+  businessName: string;
+}): Promise<boolean> {
+  const result = await provisionWorkspace({
+    userId: input.userId,
+    username: input.username,
+    displayName: input.fullName,
+    businessName: input.businessName,
+  });
 
-    const baseSlug =
-      slugify(input.businessName).replace(/_/g, "-") || "workspace";
-    let organizationId: string | null = null;
+  if (!result.ok) {
+    console.error("[signup] workspace provisioning failed:", result.error);
+    return false;
+  }
 
-    for (let attempt = 0; attempt < 5 && !organizationId; attempt++) {
-      const slug =
-        attempt === 0
-          ? baseSlug
-          : `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`;
-      const { data, error } = await supabase
-        .from("organizations")
-        .insert({
-          name: input.businessName,
-          slug,
-          created_by: input.userId,
-        })
-        .select("id")
-        .single();
-
-      if (!error && data) organizationId = data.id as string;
-      else if (error && !error.message.includes("organizations_slug_key")) {
-        return false;
-      }
-    }
-    if (!organizationId) return false;
-
-    const { error: memberError } = await supabase
-      .from("organization_members")
-      .insert({
-        organization_id: organizationId,
-        user_id: input.userId,
-        role: "owner",
-      });
-    if (memberError) return false;
-
-    // The business name doubles as the default report branding, so the first
-    // exported report already carries it.
-    await supabase
-      .from("report_branding")
-      .upsert(
-        { organization_id: organizationId, business_name: input.businessName },
-        { onConflict: "organization_id" },
-      );
-
+  if (result.created) {
     await audit({
-      organization_id: organizationId,
+      organization_id: result.organizationId,
       user_id: input.userId,
       action: "workspace.created",
       resource_type: "organization",
-      resource_id: organizationId,
+      resource_id: result.organizationId,
       metadata: { name: input.businessName, source: "signup" },
     });
-
-    return true;
-  } catch {
-    return false;
   }
+
+  return true;
 }
