@@ -186,7 +186,16 @@ let organizationId;
           name: businessName,
           slug,
           created_by: userId,
-          plan: "enterprise",
+          /*
+           * The same plan a real sign-up gets.
+           *
+           * This used to create the workspace on "enterprise", which carries a
+           * 1,000,000 credit allowance — so the account used to run the
+           * product was the one account that never met the 10-credit limit
+           * everyone else does. Operating a product on a plan no customer has
+           * is how a limit stays broken without anyone noticing.
+           */
+          plan: "free",
         })
         .select("id")
         .single();
