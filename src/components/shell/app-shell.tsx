@@ -12,11 +12,14 @@ export function AppShell({
   session,
   credits,
   notifications,
+  isPlatformStaff,
   children,
 }: {
   session: Session;
   credits: CreditBalance;
   notifications: AppNotification[];
+  /** Whether to show the Admin link. Mirrors the Admin page's own gate. */
+  isPlatformStaff: boolean;
   children: React.ReactNode;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -27,7 +30,7 @@ export function AppShell({
       <Sidebar
         mobileOpen={mobileOpen}
         onMobileClose={() => setMobileOpen(false)}
-        isAdmin={session.role === "owner" || session.role === "admin"}
+        isAdmin={isPlatformStaff}
       />
       <div className="flex min-h-screen flex-col transition-[padding] lg:pl-[204px]">
         <TopBar

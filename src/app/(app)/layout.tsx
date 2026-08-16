@@ -5,6 +5,7 @@ import { ensureWorkspace } from "@/lib/auth/provision";
 import { AppShell } from "@/components/shell/app-shell";
 import { getCreditBalance } from "@/lib/credits";
 import { listNotifications } from "@/lib/notifications";
+import { getStaffMember } from "@/lib/admin/staff";
 
 export default async function AppLayout({
   children,
@@ -40,13 +41,26 @@ export default async function AppLayout({
     if (!session?.organizationId) redirect("/login?error=workspace");
   }
 
-  const [credits, notifications] = await Promise.all([
+  const [credits, notifications, staff] = await Promise.all([
     getCreditBalance(session),
     listNotifications(session),
+    getStaffMember(session),
   ]);
 
   return (
-    <AppShell session={session} credits={credits} notifications={notifications}>
+    <AppShell
+      session={session}
+      credits={credits}
+      notifications={notifications}
+      /*
+       * The Admin link is shown on exactly the condition the Admin page
+       * enforces. It used to be shown to workspace owners and admins, which is
+       * every account in the system — so everyone saw a link that refused them
+       * — while a staff member whose own workspace role was lower saw no link
+       * to the panel they were entitled to. Both directions were wrong.
+       */
+      isPlatformStaff={Boolean(staff)}
+    >
       {children}
     </AppShell>
   );
