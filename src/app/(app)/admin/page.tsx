@@ -13,7 +13,14 @@ import {
   Zap,
 } from "lucide-react";
 import { requireSession } from "@/lib/auth/session";
-import { buildAdminSnapshot, canAccessAdmin } from "@/lib/admin";
+import { buildAdminSnapshot } from "@/lib/admin";
+import { getStaffMember } from "@/lib/admin/staff";
+import { can, ROLE_LABELS } from "@/lib/admin/rbac";
+import {
+  buildPlatformOverview,
+  listAuditLogs,
+  listUsers,
+} from "@/lib/admin/platform";
 import {
   Badge,
   Card,
@@ -23,24 +30,39 @@ import {
   EmptyState,
 } from "@/components/ui/primitives";
 import { AdminLivePanel } from "@/components/admin/live-panel";
+import { AdminTabs } from "@/components/admin/admin-tabs";
+import { AuditLog } from "@/components/admin/audit-log";
 import { ContactMessages } from "@/components/admin/contact-messages";
-import { isPlatformStaff, listContactMessages } from "@/lib/contact";
-import { formatBytes, formatNumber, relativeTime } from "@/lib/utils";
+import { RolesPanel } from "@/components/admin/roles-panel";
+import { UserTable } from "@/components/admin/user-table";
+import { listContactMessages } from "@/lib/contact";
+import { formatBytes, formatNumber } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Admin" };
 export const dynamic = "force-dynamic";
 
+/**
+ * The platform admin panel.
+ *
+ * Gated on platform staff, not on a workspace role. Signing up makes every
+ * user the owner of their own workspace, so `role === "owner"` is true for
+ * everyone and can never be the gate here.
+ *
+ * Each section is fetched only when the operator's role can see it, so a
+ * missing permission means the data is never read — not merely never drawn.
+ */
 export default async function AdminPage() {
   const session = await requireSession();
+  const staff = await getStaffMember(session);
 
-  if (!canAccessAdmin(session)) {
+  if (!staff) {
     return (
       <div className="space-y-3">
         <h1 className="text-[15px] font-semibold tracking-tight">Admin</h1>
         <EmptyState
           icon={<ShieldAlert className="h-4 w-4" />}
-          title="You do not have access to the admin panel"
-          description={`The admin panel is limited to workspace owners and admins. Your role in this workspace is "${session.role}". Ask an owner if you need access.`}
+          title="This area is for platform staff"
+          description="The admin panel controls Nexus itself — every account, not just this workspace — so it is limited to staff. If you need access, ask a super admin to add you."
           action={
             <Link
               href="/dashboard"
@@ -55,129 +77,66 @@ export default async function AdminPage() {
     );
   }
 
-  const snapshot = await buildAdminSnapshot(session);
+  const role = staff.role;
 
-  /*
-   * Contact messages are platform-wide, not workspace-scoped, so they are
-   * gated separately from the rest of this page. canAccessAdmin() is true for
-   * every user — signing up makes you the owner of your own workspace — and
-   * would hand every customer the name, email and message of every visitor.
-   */
-  const staff = isPlatformStaff(session);
-  const contactMessages = staff ? await listContactMessages(session) : [];
+  const [overview, snapshot, users, audit, messages] = await Promise.all([
+    buildPlatformOverview(),
+    buildAdminSnapshot(session),
+    can(role, "users.read") ? listUsers({ pageSize: 50 }) : null,
+    can(role, "audit.read") ? listAuditLogs({ limit: 300 }) : null,
+    can(role, "tickets.read") ? listContactMessages(session, 100) : [],
+  ]);
 
-  return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <h1 className="text-[15px] font-semibold tracking-tight">Admin</h1>
-        <p className="text-[12px] text-[var(--nx-text-muted)]">
-          Everything on this page comes from records the platform actually
-          wrote.
-        </p>
-        <Badge tone={snapshot.backend === "supabase" ? "success" : "warning"} className="ml-auto">
-          {snapshot.backend === "supabase" ? "Supabase" : "Local mode"}
-        </Badge>
-      </div>
-
-      {/* Totals */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
-        <Stat icon={<Users className="h-3 w-3" />} label="Active now" value={String(snapshot.activeNow)} accent />
-        <Stat icon={<Activity className="h-3 w-3" />} label="Analyses" value={formatNumber(snapshot.totals.analyses)} />
-        <Stat icon={<Zap className="h-3 w-3" />} label="Credits used" value={formatNumber(snapshot.totals.creditsUsed)} />
-        <Stat icon={<Database className="h-3 w-3" />} label="Datasets" value={String(snapshot.totals.datasets)} />
-        <Stat icon={<Gauge className="h-3 w-3" />} label="Rows stored" value={formatNumber(snapshot.totals.rows)} />
-        <Stat icon={<FileText className="h-3 w-3" />} label="Reports" value={String(snapshot.totals.reports)} />
-        <Stat
-          icon={<AlertTriangle className="h-3 w-3" />}
-          label="Failed jobs"
-          value={String(snapshot.totals.failedAnalyses)}
-          warn={snapshot.totals.failedAnalyses > 0}
-        />
-      </div>
-
-      {/* Live feed + throughput, refreshed client-side */}
-      <AdminLivePanel initial={snapshot} />
-
-      {staff ? <ContactMessages initial={contactMessages} /> : null}
-
-      <div className="grid gap-3 lg:grid-cols-[1fr_360px]">
-        {/* Users */}
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              <Users className="h-3.5 w-3.5" />
-              Users in this workspace
-            </CardTitle>
-            <span className="text-[10.5px] text-[var(--nx-text-faint)]">
-              {snapshot.users.length} seen
-            </span>
-          </CardHeader>
-          <CardBody className="p-0">
-            {snapshot.users.length === 0 ? (
-              <p className="px-4 py-6 text-center text-[12px] text-[var(--nx-text-muted)]">
-                No activity has been recorded yet.
-              </p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-[11.5px]">
-                  <thead>
-                    <tr className="text-[var(--nx-text-muted)]">
-                      {["User", "Status", "Last seen", "Actions 24h", "Analyses", "Credits"].map(
-                        (header) => (
-                          <th
-                            key={header}
-                            className="whitespace-nowrap border-b border-[var(--nx-border)] px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wide"
-                          >
-                            {header}
-                          </th>
-                        ),
-                      )}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {snapshot.users.map((user) => (
-                      <tr key={user.userId} className="hover:bg-[var(--nx-hover)]">
-                        <td className="border-b border-[var(--nx-border-subtle)] px-3 py-1.5 font-medium">
-                          {user.label}
-                        </td>
-                        <td className="border-b border-[var(--nx-border-subtle)] px-3 py-1.5">
-                          {user.online ? (
-                            <span className="inline-flex items-center gap-1.5 text-[var(--nx-success)]">
-                              <span className="h-1.5 w-1.5 rounded-full bg-[var(--nx-success)] nx-live-dot" />
-                              Online
-                            </span>
-                          ) : (
-                            <span className="text-[var(--nx-text-faint)]">Idle</span>
-                          )}
-                        </td>
-                        <td className="border-b border-[var(--nx-border-subtle)] px-3 py-1.5 text-[var(--nx-text-muted)]">
-                          {user.lastSeen ? relativeTime(user.lastSeen) : "—"}
-                        </td>
-                        <td className="border-b border-[var(--nx-border-subtle)] px-3 py-1.5 text-right font-mono">
-                          {user.actions24h}
-                        </td>
-                        <td className="border-b border-[var(--nx-border-subtle)] px-3 py-1.5 text-right font-mono">
-                          {user.analyses}
-                        </td>
-                        <td className="border-b border-[var(--nx-border-subtle)] px-3 py-1.5 text-right font-mono">
-                          {user.creditsUsed}/{user.creditLimit}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardBody>
-        </Card>
-
+  const sections = [
+    {
+      id: "overview",
+      label: "Overview",
+      content: (
         <div className="space-y-3">
-          {/* Health */}
+          {overview.missingTables.length > 0 ? (
+            <Card>
+              <CardBody className="flex items-start gap-2 p-3">
+                <AlertTriangle className="mt-px h-4 w-4 shrink-0 text-[var(--nx-warning)]" />
+                <div>
+                  <p className="text-[12.5px] font-medium">
+                    Some tables have not been created yet
+                  </p>
+                  <p className="mt-1 text-[11.5px] leading-relaxed text-[var(--nx-text-muted)]">
+                    Run migration 0003 in Supabase to enable sessions, login
+                    history, support tickets and billing. Until then the figures
+                    below read &ldquo;unknown&rdquo; rather than zero, because a
+                    zero would look like an answer.
+                  </p>
+                  <p className="mt-1.5 font-mono text-[10.5px] text-[var(--nx-text-faint)]">
+                    {overview.missingTables.join(", ")}
+                  </p>
+                </div>
+              </CardBody>
+            </Card>
+          ) : null}
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <Stat icon={<Users className="h-3 w-3" />} label="Total accounts" value={overview.totalUsers} accent />
+            <Stat icon={<Activity className="h-3 w-3" />} label="Active (24h)" value={overview.activeUsers24h} />
+            <Stat icon={<Activity className="h-3 w-3" />} label="Active (7d)" value={overview.activeUsers7d} />
+            <Stat icon={<Users className="h-3 w-3" />} label="New (7d)" value={overview.newUsers7d} />
+            <Stat icon={<Gauge className="h-3 w-3" />} label="Workspaces" value={overview.totalWorkspaces} />
+            <Stat icon={<Database className="h-3 w-3" />} label="Datasets" value={overview.totalDatasets} />
+            <Stat icon={<Zap className="h-3 w-3" />} label="Analyses" value={overview.totalAnalyses} />
+            <Stat icon={<FileText className="h-3 w-3" />} label="Reports" value={overview.totalReports} />
+            <Stat icon={<ShieldAlert className="h-3 w-3" />} label="Suspended" value={overview.suspendedUsers} warn={(overview.suspendedUsers ?? 0) > 0} />
+            <Stat icon={<AlertTriangle className="h-3 w-3" />} label="Failed logins (24h)" value={overview.failedLogins24h} warn={(overview.failedLogins24h ?? 0) > 0} />
+            <Stat icon={<FileText className="h-3 w-3" />} label="Open tickets" value={overview.openTickets} />
+            <Stat icon={<Database className="h-3 w-3" />} label="Storage" text={formatBytes(snapshot.totals.storageBytes)} />
+          </div>
+
+          <AdminLivePanel initial={snapshot} />
+
           <Card>
             <CardHeader>
               <CardTitle>System health</CardTitle>
             </CardHeader>
-            <CardBody className="space-y-2 p-3">
+            <CardBody className="grid gap-2 p-3 sm:grid-cols-2">
               {snapshot.health.map((item) => (
                 <div key={item.label} className="flex items-start gap-2">
                   {item.ok ? (
@@ -195,79 +154,91 @@ export default async function AdminPage() {
               ))}
             </CardBody>
           </Card>
+        </div>
+      ),
+    },
+  ];
 
-          {/* Action breakdown */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Most frequent actions</CardTitle>
-            </CardHeader>
-            <CardBody className="space-y-1.5 p-3">
-              {snapshot.actionBreakdown.length === 0 ? (
-                <p className="text-[12px] text-[var(--nx-text-muted)]">
-                  No actions recorded yet.
-                </p>
-              ) : (
-                snapshot.actionBreakdown.map((item) => {
-                  const max = snapshot.actionBreakdown[0].count || 1;
-                  return (
-                    <div key={item.action}>
-                      <div className="flex items-baseline justify-between gap-2">
-                        <span className="truncate font-mono text-[10.5px] text-[var(--nx-text-muted)]">
-                          {item.action}
-                        </span>
-                        <span className="font-mono text-[10.5px]">{item.count}</span>
-                      </div>
-                      <span
-                        aria-hidden
-                        className="mt-0.5 block h-1 overflow-hidden rounded-full bg-[var(--nx-border)]"
-                      >
-                        <span
-                          className="block h-full rounded-full bg-[var(--nx-purple)]"
-                          style={{ width: `${(item.count / max) * 100}%` }}
-                        />
-                      </span>
-                    </div>
-                  );
-                })
-              )}
-            </CardBody>
-          </Card>
+  if (users) {
+    sections.push({
+      id: "users",
+      label: "Users",
+      content: <UserTable users={users.rows} role={role} />,
+    });
+  }
 
-          {/* Storage */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Storage</CardTitle>
-            </CardHeader>
-            <CardBody className="p-3">
-              <p className="text-[20px] font-semibold leading-none tracking-tight">
-                {formatBytes(snapshot.totals.storageBytes)}
-              </p>
-              <p className="mt-1.5 text-[11px] text-[var(--nx-text-muted)]">
-                across {snapshot.totals.datasets} dataset
-                {snapshot.totals.datasets === 1 ? "" : "s"} and{" "}
-                {formatNumber(snapshot.totals.rows)} rows
-              </p>
-            </CardBody>
-          </Card>
+  if (can(role, "tickets.read")) {
+    sections.push({
+      id: "support",
+      label: "Support",
+      content: <ContactMessages initial={messages ?? []} />,
+    });
+  }
+
+  if (audit) {
+    sections.push({
+      id: "audit",
+      label: "Audit log",
+      content: <AuditLog rows={audit} />,
+    });
+  }
+
+  sections.push({
+    id: "roles",
+    label: "Roles",
+    content: <RolesPanel currentRole={role} />,
+  });
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <h1 className="text-[15px] font-semibold tracking-tight">Admin</h1>
+        <p className="text-[12px] text-[var(--nx-text-muted)]">
+          Every figure here is counted from records the platform actually wrote.
+        </p>
+        <div className="ml-auto flex items-center gap-1.5">
+          {staff.fromBootstrap ? (
+            <Badge tone="warning" title="Granted by NEXUS_PLATFORM_ADMIN_EMAILS, not by a staff record">
+              Bootstrap access
+            </Badge>
+          ) : null}
+          <Badge tone="purple">{ROLE_LABELS[role]}</Badge>
+          <Badge tone={snapshot.backend === "supabase" ? "success" : "warning"}>
+            {snapshot.backend === "supabase" ? "Supabase" : "Local mode"}
+          </Badge>
         </div>
       </div>
+
+      <AdminTabs sections={sections} />
     </div>
   );
 }
 
+/**
+ * A figure, or an honest "unknown".
+ *
+ * null means the number could not be counted — usually a table that does not
+ * exist yet. Rendering 0 there would read as "none", which is a different and
+ * wrong answer.
+ */
 function Stat({
   icon,
   label,
   value,
+  text,
   accent,
   warn,
 }: {
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
   label: string;
-  value: string;
+  value?: number | null;
+  text?: string;
   accent?: boolean;
   warn?: boolean;
 }) {
+  const display =
+    text ?? (value === null || value === undefined ? null : formatNumber(value));
+
   return (
     <Card>
       <CardBody className="p-3">
@@ -275,17 +246,26 @@ function Stat({
           {icon}
           {label}
         </p>
-        <p
-          className={`mt-1 text-[19px] font-semibold leading-none tracking-tight ${
-            warn
-              ? "text-[var(--nx-error)]"
-              : accent
-                ? "text-[var(--nx-success)]"
-                : ""
-          }`}
-        >
-          {value}
-        </p>
+        {display === null ? (
+          <p
+            className="mt-1 text-[13px] italic leading-none text-[var(--nx-text-faint)]"
+            title="Not counted — the table does not exist yet"
+          >
+            unknown
+          </p>
+        ) : (
+          <p
+            className={`mt-1 text-[19px] font-semibold leading-none tracking-tight ${
+              warn
+                ? "text-[var(--nx-error)]"
+                : accent
+                  ? "text-[var(--nx-success)]"
+                  : ""
+            }`}
+          >
+            {display}
+          </p>
+        )}
       </CardBody>
     </Card>
   );
