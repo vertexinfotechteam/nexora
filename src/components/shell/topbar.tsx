@@ -4,11 +4,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import {
-  Bell,
-  Calendar,
   ChevronDown,
   CircleHelp,
-  Filter,
   LogOut,
   Menu,
   Search,
@@ -20,14 +17,18 @@ import { cn } from "@/lib/utils";
 import type { Session } from "@/lib/store/types";
 import type { CreditBalance } from "@/lib/credits";
 import { CreditMeter } from "./credit-meter";
+import { NotificationsMenu } from "./notifications-menu";
+import type { AppNotification } from "@/lib/notifications";
 
 export function TopBar({
   session,
   credits,
+  notifications,
   onMenuClick,
 }: {
   session: Session;
   credits: CreditBalance;
+  notifications: AppNotification[];
   onMenuClick: () => void;
 }) {
   const router = useRouter();
@@ -93,10 +94,16 @@ export function TopBar({
       <div className="ml-auto flex items-center gap-1">
         <CreditMeter balance={credits} />
         <TopBarIcon label="AI insights" href="/ask-ai" icon={Sparkles} accent />
-        <TopBarIcon label="Date range" icon={Calendar} />
-        <TopBarIcon label="Filters" icon={Filter} />
-        <TopBarIcon label="Notifications" icon={Bell} />
-        <TopBarIcon label="Help" icon={CircleHelp} />
+        {/*
+          "Date range" and "Filters" used to sit here. Neither had a click
+          handler, and neither could have had one: the top bar is not tied to
+          any page's query, so there was nothing for a global date or filter
+          control to change. A control that cannot act is worse than no
+          control — it invites a click and answers with nothing. Filtering
+          belongs on the pages that actually hold a query.
+        */}
+        <NotificationsMenu initial={notifications} />
+        <TopBarIcon label="Help and FAQ" href="/faq" icon={CircleHelp} />
 
         <DropdownMenu.Root>
           <DropdownMenu.Trigger asChild>

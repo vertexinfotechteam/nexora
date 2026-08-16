@@ -4,6 +4,7 @@ import { isSupabaseConfigured } from "@/lib/env";
 import { ensureWorkspace } from "@/lib/auth/provision";
 import { AppShell } from "@/components/shell/app-shell";
 import { getCreditBalance } from "@/lib/credits";
+import { listNotifications } from "@/lib/notifications";
 
 export default async function AppLayout({
   children,
@@ -39,10 +40,13 @@ export default async function AppLayout({
     if (!session?.organizationId) redirect("/login?error=workspace");
   }
 
-  const credits = await getCreditBalance(session);
+  const [credits, notifications] = await Promise.all([
+    getCreditBalance(session),
+    listNotifications(session),
+  ]);
 
   return (
-    <AppShell session={session} credits={credits}>
+    <AppShell session={session} credits={credits} notifications={notifications}>
       {children}
     </AppShell>
   );

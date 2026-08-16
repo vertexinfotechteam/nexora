@@ -6,14 +6,17 @@ import { Sidebar } from "./sidebar";
 import { TopBar } from "./topbar";
 import type { Session } from "@/lib/store/types";
 import type { CreditBalance } from "@/lib/credits";
+import type { AppNotification } from "@/lib/notifications";
 
 export function AppShell({
   session,
   credits,
+  notifications,
   children,
 }: {
   session: Session;
   credits: CreditBalance;
+  notifications: AppNotification[];
   children: React.ReactNode;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -30,6 +33,7 @@ export function AppShell({
         <TopBar
           session={session}
           credits={credits}
+          notifications={notifications}
           onMenuClick={() => setMobileOpen(true)}
         />
         <main className="flex-1 p-3 sm:p-4">{children}</main>

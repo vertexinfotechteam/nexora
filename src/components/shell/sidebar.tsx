@@ -81,18 +81,32 @@ export function Sidebar({
                   const Icon = item.icon;
                   return (
                     <li key={item.href}>
+                      {/*
+                        One highlight, one meaning.
+                        Hover used to paint a filled block too, so a page you
+                        were merely pointing at looked as selected as the page
+                        you were on. The current page now owns the green — bar,
+                        tint and weight — and hover is a plain neutral wash.
+                      */}
                       <Link
                         href={item.href}
                         onClick={onMobileClose}
-                        title={collapsed ? item.label : undefined}
+                        aria-current={active ? "page" : undefined}
+                        title={collapsed ? `${item.label} — ${item.hint}` : item.hint}
                         className={cn(
-                          "group flex items-center gap-2 rounded-md px-2 py-[7px] text-[12.5px] transition-colors",
+                          "group relative flex items-center gap-2 rounded-md py-[7px] pl-2.5 pr-2 text-[12.5px] transition-colors",
                           active
-                            ? "bg-[var(--nx-accent-soft-strong)] text-[var(--nx-accent)]"
-                            : "text-[var(--nx-text-muted)] hover:bg-[var(--nx-elevated)] hover:text-[var(--nx-text)]",
+                            ? "bg-[var(--nx-accent-soft)] font-medium text-[var(--nx-accent-fg-on-soft)]"
+                            : "text-[var(--nx-text-muted)] hover:bg-[var(--nx-hover)] hover:text-[var(--nx-text)]",
                           collapsed && "justify-center px-0",
                         )}
                       >
+                        {active && !collapsed ? (
+                          <span
+                            aria-hidden
+                            className="absolute left-0 top-1/2 h-[15px] w-[2.5px] -translate-y-1/2 rounded-r bg-[var(--nx-accent)]"
+                          />
+                        ) : null}
                         <Icon
                           className={cn(
                             "h-[15px] w-[15px] shrink-0",
@@ -105,15 +119,18 @@ export function Sidebar({
                           <>
                             <span className="truncate">{item.label}</span>
                             {item.badge ? (
-                              <Badge tone="cyan" className="ml-auto">
+                              <Badge tone="cyan" className="ml-auto shrink-0">
                                 {item.badge}
                               </Badge>
                             ) : null}
+                            {/*
+                              A bare grey dot meant nothing to anyone who had
+                              not read the code. Say the word instead.
+                            */}
                             {item.status === "planned" ? (
-                              <span
-                                className="ml-auto h-1 w-1 rounded-full bg-[var(--nx-border-strong)]"
-                                title="Not implemented yet"
-                              />
+                              <span className="ml-auto shrink-0 rounded px-1 py-px text-[9.5px] font-medium uppercase tracking-wide text-[var(--nx-text-faint)]">
+                                Soon
+                              </span>
                             ) : null}
                           </>
                         ) : null}

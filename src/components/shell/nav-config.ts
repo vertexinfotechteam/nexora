@@ -29,6 +29,15 @@ export type NavItem = {
   badge?: string;
   /** Hidden from the sidebar for anyone below admin. */
   adminOnly?: boolean;
+  /**
+   * One plain sentence, shown on hover.
+   *
+   * The labels used to be the vocabulary of an analytics vendor — "Cohorts",
+   * "Governance", "Models" — which says nothing to someone who just wants to
+   * know what a page is for. Labels are now named after the job, and this
+   * carries the detail that used to be missing entirely.
+   */
+  hint: string;
 };
 
 export type NavGroup = {
@@ -36,49 +45,96 @@ export type NavGroup = {
   items: NavItem[];
 };
 
-/** Sidebar structure, taken from PAGE 2 of the product spec. */
+/**
+ * Sidebar structure.
+ *
+ * Routes are unchanged — every href is exactly what it was, so links, history
+ * and bookmarks all still work. Only the words a person reads have changed.
+ */
 export const NAV_GROUPS: NavGroup[] = [
   {
-    label: "Overview",
+    label: "Start here",
     items: [
       {
         label: "Overview",
         href: "/dashboard",
         icon: LayoutDashboard,
         status: "live",
+        hint: "Your headline numbers and what changed recently.",
       },
     ],
   },
   {
-    label: "Analytics",
+    label: "Your analysis",
     items: [
-      { label: "Dashboards", href: "/dashboards", icon: Gauge, status: "planned" },
-      { label: "Reports", href: "/reports", icon: FileText, status: "live" },
-      { label: "Explore", href: "/explore", icon: Compass, status: "planned" },
-      { label: "Cohorts", href: "/cohorts", icon: Users, status: "planned" },
-      { label: "Data Studio", href: "/studio", icon: Table2, status: "live" },
+      {
+        label: "Reports",
+        href: "/reports",
+        icon: FileText,
+        status: "live",
+        hint: "Finished analyses you can download as PDF or Excel.",
+      },
+      {
+        // Was "Data Studio", which sounded like a data tool. It builds
+        // invoices and quotes carrying your logo and signature.
+        label: "Invoices & Quotes",
+        href: "/studio",
+        icon: Table2,
+        status: "live",
+        hint: "Turn pasted details into an invoice or quote with your branding.",
+      },
+      {
+        // Was "Dashboards".
+        label: "Saved Views",
+        href: "/dashboards",
+        icon: Gauge,
+        status: "planned",
+        hint: "Pin the charts you check often onto one screen.",
+      },
+      {
+        // Was "Explore".
+        label: "Explore Data",
+        href: "/explore",
+        icon: Compass,
+        status: "planned",
+        hint: "Slice your data by any column without writing SQL.",
+      },
+      {
+        // Was "Cohorts", a term most people have never met.
+        label: "Customer Groups",
+        href: "/cohorts",
+        icon: Users,
+        status: "planned",
+        hint: "Compare groups of customers against each other over time.",
+      },
     ],
   },
   {
-    label: "AI & Insights",
+    label: "What the AI found",
     items: [
       {
-        label: "Anomaly Detection",
+        // Was "Anomaly Detection".
+        label: "Unusual Activity",
         href: "/anomalies",
         icon: AlertTriangle,
         status: "live",
+        hint: "Points in your data that do not fit the usual pattern.",
       },
       {
-        label: "Forecasting",
+        // Was "Forecasting".
+        label: "What Happens Next",
         href: "/forecasting",
         icon: TrendingUp,
         status: "live",
+        hint: "Where your numbers are heading, with an honest error range.",
       },
       {
-        label: "Recommendations",
+        // Was "Recommendations".
+        label: "Suggested Actions",
         href: "/recommendations",
         icon: Lightbulb,
         status: "live",
+        hint: "What to do about what the analysis found.",
       },
       {
         label: "Ask AI",
@@ -86,40 +142,79 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Sparkles,
         status: "live",
         badge: "Beta",
+        hint: "Ask a question about your data in plain English.",
       },
     ],
   },
   {
-    label: "Data Management",
+    label: "Your data",
     items: [
-      { label: "Sources", href: "/datasets", icon: Database, status: "live" },
-      { label: "Models", href: "/models", icon: Boxes, status: "planned" },
       {
-        label: "Data Quality",
+        // Was "Sources".
+        label: "Your Files",
+        href: "/datasets",
+        icon: Database,
+        status: "live",
+        hint: "Spreadsheets you have uploaded, and their columns.",
+      },
+      {
+        // Was "Data Quality".
+        label: "Data Health",
         href: "/data-quality",
         icon: ShieldCheck,
         status: "live",
+        hint: "Missing values, duplicates and outliers found in your files.",
       },
       {
-        label: "Governance",
+        // Was "Governance", which reads as a compliance department.
+        label: "Activity History",
         href: "/governance",
         icon: ScrollText,
         status: "live",
+        hint: "Every sign-in, upload, analysis and export, with a timestamp.",
+      },
+      {
+        // Was "Models", which suggests machine learning. It is saved formulas.
+        label: "Saved Formulas",
+        href: "/models",
+        icon: Boxes,
+        status: "planned",
+        hint: "Reusable calculations you define once and use everywhere.",
       },
     ],
   },
   {
-    label: "Configuration",
+    label: "Settings",
     items: [
-      { label: "Alerts", href: "/alerts", icon: Bell, status: "planned" },
-      { label: "Metrics", href: "/metrics", icon: BarChart3, status: "planned" },
-      { label: "Settings", href: "/settings", icon: Settings, status: "live" },
+      {
+        label: "Alerts",
+        href: "/alerts",
+        icon: Bell,
+        status: "planned",
+        hint: "Get told when a number crosses a line you care about.",
+      },
+      {
+        // Was "Metrics".
+        label: "Saved Numbers",
+        href: "/metrics",
+        icon: BarChart3,
+        status: "planned",
+        hint: "Agree one definition of a number so everyone reports it the same.",
+      },
+      {
+        label: "Settings",
+        href: "/settings",
+        icon: Settings,
+        status: "live",
+        hint: "Your account, plan, logo and signature.",
+      },
       {
         label: "Admin",
         href: "/admin",
         icon: ShieldHalf,
         status: "live",
         adminOnly: true,
+        hint: "Users, activity and system health for this workspace.",
       },
     ],
   },
