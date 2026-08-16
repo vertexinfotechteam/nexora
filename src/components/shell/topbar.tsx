@@ -106,7 +106,7 @@ export function TopBar({
               type="button"
               className="ml-1 flex items-center gap-1.5 rounded-md px-1 py-1 hover:bg-[var(--nx-elevated)]"
             >
-              <span className="flex h-6 w-6 items-center justify-center rounded bg-[var(--nx-purple)] text-[10px] font-semibold text-white">
+              <span className="flex h-6 w-6 items-center justify-center rounded bg-[var(--nx-purple)] text-[10px] font-semibold text-[var(--nx-purple-on)]">
                 {initials || "NX"}
               </span>
               <span className="hidden text-left text-[11.5px] leading-tight sm:block">

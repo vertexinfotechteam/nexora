@@ -47,7 +47,13 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
         }}
       />
 
-      <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 pb-16 pt-14 sm:px-6 lg:grid-cols-[1.05fr_1fr] lg:pb-24 lg:pt-20">
+      {/*
+        Columns start at the top rather than centring.
+        The demo stack on the right is far taller than the copy on the left, so
+        centring pushed the headline ~90px down and opened a band of empty page
+        directly under the navbar — the first thing a visitor saw was nothing.
+      */}
+      <div className="mx-auto grid max-w-6xl items-start gap-10 px-4 pb-16 pt-8 sm:px-6 lg:grid-cols-[1.05fr_1fr] lg:pb-24 lg:pt-12">
         <div>
           <span className="nx-rise nx-sheen inline-flex items-center gap-1.5 rounded-full border border-[var(--nx-border)] bg-[var(--nx-card)] px-3 py-1 text-[11.5px] text-[var(--nx-text-muted)] shadow-[var(--nx-shadow)]">
             <LogoMark className="h-3.5 w-3.5" />
@@ -293,7 +299,7 @@ export function Pricing() {
               }
             >
               {plan.highlight ? (
-                <span className="absolute -top-2.5 left-5 rounded-full bg-[var(--nx-purple)] px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+                <span className="absolute -top-2.5 left-5 rounded-full bg-[var(--nx-purple)] px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--nx-purple-on)]">
                   Most popular
                 </span>
               ) : null}

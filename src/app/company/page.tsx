@@ -34,7 +34,7 @@ export default function CompanyPage() {
               className="rounded-xl border border-[var(--nx-border)] bg-[var(--nx-card)] p-4"
             >
               <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--nx-purple)] text-[13px] font-semibold text-white">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--nx-purple)] text-[13px] font-semibold text-[var(--nx-purple-on)]">
                   {member.initials}
                 </span>
                 <div className="min-w-0">

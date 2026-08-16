@@ -9,7 +9,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary:
-          "bg-[var(--nx-purple)] text-white hover:bg-[var(--nx-purple-hover)] active:bg-[var(--nx-purple-active)]",
+          "bg-[var(--nx-purple)] text-[var(--nx-purple-on)] hover:bg-[var(--nx-purple-hover)] active:bg-[var(--nx-purple-active)]",
         accent:
           "bg-[var(--nx-accent)] text-[var(--nx-accent-fg)] hover:bg-[var(--nx-accent-hover)] active:bg-[var(--nx-accent-active)]",
         secondary:

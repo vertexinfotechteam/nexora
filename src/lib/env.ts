@@ -1,5 +1,7 @@
 import "server-only";
 
+import { parseStaffAllowlist } from "@/lib/platform-staff";
+
 /**
  * Central, validated access to server configuration.
  *
@@ -45,6 +47,20 @@ export function isSupabaseConfigured(): boolean {
 
 /** Where the app persists data when Supabase has not been connected yet. */
 export const LOCAL_DATA_DIR = read("NEXUS_DATA_DIR") ?? ".nexora";
+
+/**
+ * Email addresses allowed to read messages sent through the public contact
+ * form. Comma-separated in `NEXUS_PLATFORM_ADMIN_EMAILS`.
+ *
+ * This is deliberately not a workspace role. Every person who signs up owns
+ * their own workspace, so a role check would be true for every user in the
+ * system and would expose every visitor's name, email and message to every
+ * customer. An empty list means nobody can read them, which is the safe way to
+ * fail.
+ */
+export const PLATFORM_ADMIN_EMAILS: string[] = parseStaffAllowlist(
+  read("NEXUS_PLATFORM_ADMIN_EMAILS"),
+);
 
 export type AiProviderId = "anthropic" | "gemini" | "openai" | "ollama";
 

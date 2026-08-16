@@ -159,7 +159,7 @@ export function AiAssistant() {
                   className={cn(
                     "max-w-[85%] rounded-xl px-3 py-2 text-[12px] leading-relaxed",
                     message.role === "user"
-                      ? "rounded-br-sm bg-[var(--nx-purple)] text-white"
+                      ? "rounded-br-sm bg-[var(--nx-purple)] text-[var(--nx-purple-on)]"
                       : "rounded-bl-sm bg-[var(--nx-elevated)] text-[var(--nx-text)]",
                   )}
                 >
@@ -214,7 +214,7 @@ export function AiAssistant() {
               type="submit"
               disabled={!input.trim() || busy}
               aria-label="Send"
-              className="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--nx-purple)] text-white transition-colors hover:bg-[var(--nx-purple-hover)] disabled:opacity-40"
+              className="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--nx-purple)] text-[var(--nx-purple-on)] transition-colors hover:bg-[var(--nx-purple-hover)] disabled:opacity-40"
             >
               <Send className="h-3.5 w-3.5" />
             </button>

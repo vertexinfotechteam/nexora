@@ -23,6 +23,8 @@ import {
   EmptyState,
 } from "@/components/ui/primitives";
 import { AdminLivePanel } from "@/components/admin/live-panel";
+import { ContactMessages } from "@/components/admin/contact-messages";
+import { isPlatformStaff, listContactMessages } from "@/lib/contact";
 import { formatBytes, formatNumber, relativeTime } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Admin" };
@@ -55,6 +57,15 @@ export default async function AdminPage() {
 
   const snapshot = await buildAdminSnapshot(session);
 
+  /*
+   * Contact messages are platform-wide, not workspace-scoped, so they are
+   * gated separately from the rest of this page. canAccessAdmin() is true for
+   * every user — signing up makes you the owner of your own workspace — and
+   * would hand every customer the name, email and message of every visitor.
+   */
+  const staff = isPlatformStaff(session);
+  const contactMessages = staff ? await listContactMessages(session) : [];
+
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
@@ -86,6 +97,8 @@ export default async function AdminPage() {
 
       {/* Live feed + throughput, refreshed client-side */}
       <AdminLivePanel initial={snapshot} />
+
+      {staff ? <ContactMessages initial={contactMessages} /> : null}
 
       <div className="grid gap-3 lg:grid-cols-[1fr_360px]">
         {/* Users */}

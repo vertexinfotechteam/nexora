@@ -104,7 +104,7 @@ export default async function SharedDocumentPage(
           <div className="mt-4 flex flex-wrap gap-2">
             <a
               href={`/api/shared/${token}/pdf`}
-              className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--nx-purple)] px-4 text-[13.5px] font-semibold text-white transition-colors hover:bg-[var(--nx-purple-hover)]"
+              className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--nx-purple)] px-4 text-[13.5px] font-semibold text-[var(--nx-purple-on)] transition-colors hover:bg-[var(--nx-purple-hover)]"
             >
               <Download className="h-4 w-4" />
               Download PDF

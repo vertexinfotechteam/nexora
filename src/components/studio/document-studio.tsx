@@ -297,7 +297,7 @@ export function DocumentStudio({ initial }: { initial: BusinessDocument }) {
               className={cn(
                 "rounded-md px-3 py-1.5 text-[12.5px] font-medium transition-colors",
                 tab === value
-                  ? "bg-[var(--nx-purple)] text-white"
+                  ? "bg-[var(--nx-purple)] text-[var(--nx-purple-on)]"
                   : "bg-[var(--nx-elevated)] text-[var(--nx-text-muted)] hover:text-[var(--nx-text)]",
               )}
             >

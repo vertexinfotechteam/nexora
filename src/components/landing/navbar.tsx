@@ -13,6 +13,7 @@ const LINKS = [
   { href: "#pricing", label: "Pricing" },
   { href: "#resources", label: "Resources" },
   { href: "#team", label: "Team" },
+  { href: "#contact", label: "Contact" },
 ];
 
 /**

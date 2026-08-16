@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth/session";
 import { AmbientBackground } from "@/components/visual/ambient-background";
 import { LandingNavbar } from "@/components/landing/navbar";
 import { AiAssistant } from "@/components/landing/ai-assistant";
+import { Contact } from "@/components/landing/contact";
 import {
   FinalCta,
   Footer,
@@ -37,6 +38,7 @@ export default async function LandingPage() {
         <Pricing />
         <Resources />
         <Team />
+        <Contact />
         <FinalCta signedIn={signedIn} />
       </main>
       <Footer />

@@ -35,7 +35,7 @@ function SubmitButton({ label, pending }: { label: string; pending: boolean }) {
     <button
       type="submit"
       disabled={pending}
-      className="mt-1 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[var(--nx-purple)] text-[14px] font-semibold text-white transition-colors hover:bg-[var(--nx-purple-hover)] active:bg-[var(--nx-purple-active)] disabled:cursor-not-allowed disabled:opacity-60"
+      className="mt-1 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[var(--nx-purple)] text-[14px] font-semibold text-[var(--nx-purple-on)] transition-colors hover:bg-[var(--nx-purple-hover)] active:bg-[var(--nx-purple-active)] disabled:cursor-not-allowed disabled:opacity-60"
     >
       {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
       {pending ? "Working…" : label}
@@ -146,7 +146,7 @@ export function LoginForm({
           <form action={localModeAction} className="mt-3">
             <button
               type="submit"
-              className="h-10 w-full rounded-lg bg-[var(--nx-purple)] text-[13.5px] font-semibold text-white transition-colors hover:bg-[var(--nx-purple-hover)]"
+              className="h-10 w-full rounded-lg bg-[var(--nx-purple)] text-[13.5px] font-semibold text-[var(--nx-purple-on)] transition-colors hover:bg-[var(--nx-purple-hover)]"
             >
               Continue in local mode
             </button>
