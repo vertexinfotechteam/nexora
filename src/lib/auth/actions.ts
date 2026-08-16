@@ -27,7 +27,19 @@ import { provisionWorkspace } from "./provision";
 const GENERIC_CREDENTIALS_ERROR =
   "Those credentials are not valid. Check them and try again.";
 
-export type AuthState = { error?: string; success?: string } | null;
+export type AuthState = {
+  error?: string;
+  success?: string;
+  /**
+   * The email or username that was submitted, echoed back on failure.
+   *
+   * React resets a form once its action completes, so without this the sign-in
+   * field is wiped every time a password is mistyped and the whole thing has
+   * to be entered again. Only the identifier is ever returned — never the
+   * password, which would then sit in the page's markup.
+   */
+  identifier?: string;
+} | null;
 
 /** Matches the rule stated under the field, so the UI never promises something
  *  the server does not enforce. */
@@ -310,7 +322,7 @@ export async function signInAction(
   const context = await requestContext();
 
   if (!identifier || !password) {
-    return { error: GENERIC_CREDENTIALS_ERROR };
+    return { error: GENERIC_CREDENTIALS_ERROR, identifier };
   }
 
   if (!isSupabaseConfigured()) {
@@ -325,7 +337,7 @@ export async function signInAction(
   }
 
   const supabase = await getServerSupabase();
-  if (!supabase) return { error: GENERIC_CREDENTIALS_ERROR };
+  if (!supabase) return { error: GENERIC_CREDENTIALS_ERROR, identifier };
 
   let email = identifier.toLowerCase();
 
@@ -351,7 +363,7 @@ export async function signInAction(
         metadata: { reason: "unknown_identifier" },
         ...context,
       });
-      return { error: GENERIC_CREDENTIALS_ERROR };
+      return { error: GENERIC_CREDENTIALS_ERROR, identifier };
     }
     email = String(resolved);
   }
@@ -369,7 +381,7 @@ export async function signInAction(
       metadata: { reason: "bad_credentials" },
       ...context,
     });
-    return { error: GENERIC_CREDENTIALS_ERROR };
+    return { error: GENERIC_CREDENTIALS_ERROR, identifier };
   }
 
   await audit({

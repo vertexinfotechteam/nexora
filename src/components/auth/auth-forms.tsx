@@ -85,9 +85,21 @@ export function LoginForm({
         <input type="hidden" name="next" value={next} />
 
         <Field label="Email or username" required htmlFor="identifier">
+          {/*
+            defaultValue, keyed on the returned identifier.
+
+            React resets a form once its action resolves, so a mistyped
+            password used to wipe the email as well and the whole thing had to
+            be retyped — which reads as the form rejecting an address it had
+            just accepted. Restoring it here means only the password is
+            cleared, which is the field that was actually wrong. The key forces
+            a fresh input so the restored value wins over the reset.
+          */}
           <TextField
+            key={state?.identifier ?? "identifier"}
             id="identifier"
             name="identifier"
+            defaultValue={state?.identifier ?? ""}
             autoComplete="username"
             required
             disabled={!supabaseConfigured}
