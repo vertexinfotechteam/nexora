@@ -13,7 +13,7 @@ export function Card({
   return (
     <section
       className={cn(
-        "rounded-[10px] border border-[var(--nx-border)] bg-[var(--nx-card)]",
+        "nx-lift rounded-[10px] border border-[var(--nx-border)] bg-[var(--nx-card)]",
         className,
       )}
       {...props}

@@ -93,9 +93,9 @@
 
   /* Ambient layer. Light mode keeps it barely-there so the cream stays clean;
      the same canvas reads these values and simply draws fainter. */
-  --nx-ambient-1: 10, 74, 60;
-  --nx-ambient-2: 180, 118, 42;
-  --nx-ambient-opacity: 0.35;
+  --nx-ambient-1: 43, 49, 56;
+  --nx-ambient-2: 28, 138, 106;
+  --nx-ambient-opacity: 0.5;
   --nx-glass: rgba(255, 255, 255, 0.72);
   --nx-glass-border: rgba(10, 74, 60, 0.1);
 
@@ -185,8 +185,8 @@
   --nx-shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.65);
 
   /* Ambient layer, read by the background canvas. */
-  --nx-ambient-1: 124, 92, 255;
-  --nx-ambient-2: 34, 211, 238;
+  --nx-ambient-1: 148, 163, 184;
+  --nx-ambient-2: 34, 197, 143;
   --nx-ambient-opacity: 1;
   --nx-glass: rgba(13, 18, 32, 0.72);
   --nx-glass-border: rgba(124, 92, 255, 0.14);
@@ -320,17 +320,9 @@ body {
   mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
 }
 
-@utility nx-gradient-text {
-  background: linear-gradient(
-    100deg,
-    var(--nx-text) 0%,
-    var(--nx-purple) 55%,
-    var(--nx-accent) 100%
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
+/* nx-gradient-text is defined once in the motion system below, where it also
+   gains the slow pan. Keeping a second static copy here would let the two
+   drift apart. */
 
 @keyframes nx-float {
   0%,
@@ -448,4 +440,212 @@ body {
 
 @utility nx-scanline {
   animation: nx-scan 9s ease-in-out infinite;
+}
+
+/* ===========================================================================
+   Motion system
+   
+   One shared vocabulary so the whole product moves the same way: content
+   arrives with a short rise, surfaces lift on hover, and accents shimmer.
+   Every animation here is decorative — nothing depends on it to be usable,
+   and the reduced-motion block at the end of this file disables all of it.
+   =========================================================================== */
+
+@keyframes nx-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/** Content entrance. Pair with nx-delay-* for a stagger. */
+@utility nx-rise {
+  animation: nx-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@utility nx-delay-1 { animation-delay: 0.06s; }
+@utility nx-delay-2 { animation-delay: 0.12s; }
+@utility nx-delay-3 { animation-delay: 0.18s; }
+@utility nx-delay-4 { animation-delay: 0.24s; }
+@utility nx-delay-5 { animation-delay: 0.30s; }
+@utility nx-delay-6 { animation-delay: 0.36s; }
+
+/* Scroll reveal. The observer adds `is-visible`; until then the element is
+   held just below its resting position. */
+@utility nx-reveal {
+  opacity: 0;
+  transform: translate3d(0, 22px, 0);
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+.nx-reveal.is-visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+/* Surfaces lift toward the reader on hover. */
+@utility nx-lift {
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.35s ease;
+}
+
+@utility nx-lift-hover {
+  transform: translateY(-3px);
+  box-shadow: var(--nx-shadow-lg);
+}
+
+/* Slow drift across a wide gradient, used on headline text. */
+@keyframes nx-gradient-pan {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@utility nx-gradient-text {
+  background: linear-gradient(
+    100deg,
+    var(--nx-text) 0%,
+    var(--nx-purple) 38%,
+    var(--nx-logo-green) 62%,
+    var(--nx-text) 100%
+  );
+  background-size: 250% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: nx-gradient-pan 9s ease-in-out infinite;
+}
+
+/* A light sweep that crosses a surface once in a while. */
+@keyframes nx-sheen {
+  0% {
+    transform: translateX(-120%) skewX(-18deg);
+  }
+  60%,
+  100% {
+    transform: translateX(320%) skewX(-18deg);
+  }
+}
+
+@utility nx-sheen {
+  position: relative;
+  overflow: hidden;
+}
+
+.nx-sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 32%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklab, var(--nx-logo-green) 22%, transparent),
+    transparent
+  );
+  animation: nx-sheen 6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Counter-rotating conic border, for the one or two surfaces that earn it. */
+@keyframes nx-orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@utility nx-ring {
+  position: relative;
+  isolation: isolate;
+}
+
+.nx-ring::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    var(--nx-logo-green) 40deg,
+    transparent 120deg,
+    transparent 240deg,
+    var(--nx-purple) 300deg,
+    transparent 360deg
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: nx-orbit 8s linear infinite;
+  opacity: 0.55;
+  z-index: -1;
+}
+
+/* Soft breathing halo behind a focal element. */
+@keyframes nx-halo {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.08);
+  }
+}
+
+@utility nx-halo {
+  animation: nx-halo 7s ease-in-out infinite;
+}
+
+/* Ticker used for the live figures in the hero. */
+@keyframes nx-tick {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  45% {
+    transform: translateY(-5px);
+    opacity: 0;
+  }
+  55% {
+    transform: translateY(5px);
+    opacity: 0;
+  }
+}
+
+@utility nx-tick {
+  animation: nx-tick 0.5s ease-in-out;
+}
+
+/* Dashed path that draws itself, echoing the trend line in the mark. */
+@keyframes nx-draw {
+  from {
+    stroke-dashoffset: var(--nx-draw-length, 400);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@utility nx-draw {
+  stroke-dasharray: var(--nx-draw-length, 400);
+  animation: nx-draw 2.4s cubic-bezier(0.22, 1, 0.36, 1) both;
 }

@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LogoMark } from "@/components/brand/logo";
+import { Reveal } from "@/components/visual/reveal";
 import { LiveDemoChart, LiveDemoPoll } from "./live-demo";
 import { TEAM, COMPANY } from "@/lib/team";
 
@@ -29,20 +30,31 @@ import { TEAM, COMPANY } from "@/lib/team";
 export function Hero({ signedIn }: { signedIn: boolean }) {
   return (
     <section className="relative overflow-hidden">
+      {/* Layered atmosphere: grid, two halos in the mark's colours, and a
+          hairline that traces the section edge. */}
       <div aria-hidden className="nx-hero-grid absolute inset-0 -z-10" />
       <div
         aria-hidden
-        className="absolute left-1/2 top-0 -z-10 h-[380px] w-[720px] -translate-x-1/2 rounded-full bg-[var(--nx-purple-soft)] blur-[110px]"
+        className="nx-halo absolute left-[8%] top-[-14%] -z-10 h-[420px] w-[520px] rounded-full bg-[var(--nx-purple-soft)] blur-[130px]"
+      />
+      <div
+        aria-hidden
+        className="nx-halo absolute right-[4%] top-[6%] -z-10 h-[380px] w-[460px] rounded-full blur-[140px]"
+        style={{
+          background:
+            "radial-gradient(circle, color-mix(in oklab, var(--nx-logo-green) 26%, transparent) 0%, transparent 70%)",
+          animationDelay: "2.5s",
+        }}
       />
 
       <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 pb-16 pt-14 sm:px-6 lg:grid-cols-[1.05fr_1fr] lg:pb-24 lg:pt-20">
         <div>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--nx-border)] bg-[var(--nx-card)] px-3 py-1 text-[11.5px] text-[var(--nx-text-muted)] shadow-[var(--nx-shadow)]">
-            <Sparkles className="h-3 w-3 text-[var(--nx-accent)]" />
+          <span className="nx-rise nx-sheen inline-flex items-center gap-1.5 rounded-full border border-[var(--nx-border)] bg-[var(--nx-card)] px-3 py-1 text-[11.5px] text-[var(--nx-text-muted)] shadow-[var(--nx-shadow)]">
+            <LogoMark className="h-3.5 w-3.5" />
             Powered by {COMPANY.name}
           </span>
 
-          <h1 className="mt-4 text-[34px] font-semibold leading-[1.08] tracking-tight sm:text-[44px] lg:text-[50px]">
+          <h1 className="nx-rise nx-delay-1 mt-4 text-[34px] font-semibold leading-[1.08] tracking-tight sm:text-[44px] lg:text-[50px]">
             Ask a question.
             <br />
             <span className="nx-gradient-text">Get the analysis,</span>
@@ -50,7 +62,7 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
             not a guess.
           </h1>
 
-          <p className="mt-4 max-w-xl text-[14.5px] leading-relaxed text-[var(--nx-text-muted)]">
+          <p className="nx-rise nx-delay-2 mt-4 max-w-xl text-[14.5px] leading-relaxed text-[var(--nx-text-muted)]">
             Upload a spreadsheet and describe what you need in plain English.
             Nexus profiles the data, runs the calculations, finds what is
             unusual, forecasts what is next — and shows you every step as it
@@ -58,20 +70,20 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
             invented, and anything the AI cannot prove never reaches your screen.
           </p>
 
-          <div className="mt-6 flex flex-wrap items-center gap-2.5">
+          <div className="nx-rise nx-delay-3 mt-6 flex flex-wrap items-center gap-2.5">
             {signedIn ? (
-              <Button asChild size="lg" variant="primary">
+              <Button asChild size="lg" variant="primary" className="group">
                 <Link href="/dashboard">
                   Open your dashboard
-                  <ArrowRight className="h-4 w-4" />
+                  <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
                 </Link>
               </Button>
             ) : (
               <>
-                <Button asChild size="lg" variant="primary">
+                <Button asChild size="lg" variant="primary" className="group">
                   <Link href="/signup">
                     Create account free
-                    <ArrowRight className="h-4 w-4" />
+                    <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
                   </Link>
                 </Button>
                 <Button asChild size="lg" variant="outline">
@@ -84,7 +96,7 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
             )}
           </div>
 
-          <ul className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-[12px] text-[var(--nx-text-muted)]">
+          <ul className="nx-rise nx-delay-4 mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-[12px] text-[var(--nx-text-muted)]">
             {[
               "10 free analysis credits",
               "No card required",
@@ -98,7 +110,7 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
           </ul>
         </div>
 
-        <div className="space-y-3">
+        <div className="nx-rise nx-delay-3 space-y-3">
           <LiveDemoChart />
           <LiveDemoPoll />
         </div>
@@ -148,11 +160,11 @@ export function Product() {
   return (
     <section id="product" className="border-t border-[var(--nx-border)] py-16 lg:py-20">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <SectionHeading
+        <Reveal><SectionHeading
           eyebrow="Product"
           title="Everything an analyst does, in the time it takes to ask"
           subtitle="Not a chatbot bolted onto a spreadsheet. A real analytics engine with an AI planner in front of it, and a verification layer behind it."
-        />
+        /></Reveal>
 
         <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((feature) => {
@@ -160,9 +172,9 @@ export function Product() {
             return (
               <article
                 key={feature.title}
-                className="group rounded-xl border border-[var(--nx-border)] bg-[var(--nx-card)] p-5 transition-all hover:-translate-y-0.5 hover:border-[var(--nx-purple)] hover:shadow-[var(--nx-shadow-lg)]"
+                className="nx-lift group rounded-xl border border-[var(--nx-border)] bg-[var(--nx-card)] p-5 hover:-translate-y-1 hover:border-[var(--nx-logo-green)] hover:shadow-[var(--nx-shadow-lg)]"
               >
-                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--nx-purple-soft)] text-[var(--nx-purple-fg)]">
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--nx-purple-soft)] text-[var(--nx-purple-fg)] transition-transform duration-300 group-hover:scale-110">
                   <Icon className="h-4 w-4" />
                 </span>
                 <h3 className="mt-3 text-[14px] font-semibold">{feature.title}</h3>
@@ -264,11 +276,11 @@ export function Pricing() {
       className="border-t border-[var(--nx-border)] bg-[var(--nx-surface)] py-16 lg:py-20"
     >
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <SectionHeading
+        <Reveal><SectionHeading
           eyebrow="Pricing"
           title="Start free. Pay when it earns its place."
           subtitle="Every plan runs the same analytics engine. What changes is how much you can run and how many people you run it with."
-        />
+        /></Reveal>
 
         <div className="mt-10 grid gap-4 lg:grid-cols-4">
           {PLANS.map((plan) => (
@@ -276,8 +288,8 @@ export function Pricing() {
               key={plan.name}
               className={
                 plan.highlight
-                  ? "relative flex flex-col rounded-xl border-2 border-[var(--nx-purple)] bg-[var(--nx-card)] p-5 shadow-[var(--nx-shadow-lg)]"
-                  : "relative flex flex-col rounded-xl border border-[var(--nx-border)] bg-[var(--nx-card)] p-5"
+                  ? "nx-ring nx-lift relative flex flex-col rounded-xl border-2 border-[var(--nx-purple)] bg-[var(--nx-card)] p-5 shadow-[var(--nx-shadow-lg)] hover:-translate-y-1"
+                  : "nx-lift relative flex flex-col rounded-xl border border-[var(--nx-border)] bg-[var(--nx-card)] p-5 hover:-translate-y-1 hover:border-[var(--nx-logo-green)] hover:shadow-[var(--nx-shadow-lg)]"
               }
             >
               {plan.highlight ? (
@@ -382,11 +394,11 @@ export function Resources() {
   return (
     <section id="resources" className="border-t border-[var(--nx-border)] py-16 lg:py-20">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <SectionHeading
+        <Reveal><SectionHeading
           eyebrow="Resources"
           title="Learn the method, not just the buttons"
           subtitle="Short, practical writing on getting trustworthy answers out of imperfect data."
-        />
+        /></Reveal>
 
         <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {RESOURCES.map((resource) => {
@@ -394,7 +406,7 @@ export function Resources() {
             return (
               <article
                 key={resource.title}
-                className="flex flex-col rounded-xl border border-[var(--nx-border)] bg-[var(--nx-card)] p-5 transition-colors hover:border-[var(--nx-accent)]"
+                className="nx-lift flex flex-col rounded-xl border border-[var(--nx-border)] bg-[var(--nx-card)] p-5 hover:-translate-y-1 hover:border-[var(--nx-logo-green)] hover:shadow-[var(--nx-shadow-lg)]"
               >
                 <div className="flex items-center gap-2">
                   <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--nx-accent-soft)] text-[var(--nx-accent-fg-on-soft)]">
@@ -442,17 +454,17 @@ export function Team() {
       className="border-t border-[var(--nx-border)] bg-[var(--nx-surface)] py-16 lg:py-20"
     >
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <SectionHeading
+        <Reveal><SectionHeading
           eyebrow="Team"
           title={`The people behind ${COMPANY.product}`}
           subtitle={`A small team at ${COMPANY.name} with one shared rule: if we cannot show where a number came from, it does not ship.`}
-        />
+        /></Reveal>
 
         <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {TEAM.map((member) => (
             <article
               key={member.name}
-              className="rounded-xl border border-[var(--nx-border)] bg-[var(--nx-card)] p-5"
+              className="nx-lift rounded-xl border border-[var(--nx-border)] bg-[var(--nx-card)] p-5 hover:-translate-y-1 hover:border-[var(--nx-logo-green)] hover:shadow-[var(--nx-shadow-lg)]"
             >
               <div className="flex items-center gap-3">
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--nx-purple)] to-[var(--nx-accent)] text-[14px] font-semibold text-white">
