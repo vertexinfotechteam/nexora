@@ -1,16 +1,22 @@
 /**
- * Creates the first workspace owner (admin) account.
+ * Creates an account and its workspace.
  *
- *   node scripts/create-admin.mjs <email> <password> [business name]
+ *   node scripts/create-admin.mjs <email> [business name]
+ *
+ * The password is read from the ADMIN_PASSWORD environment variable, or typed
+ * at the prompt if that is not set. It is deliberately not a command-line
+ * argument: anything passed that way lands in your shell history and is
+ * visible to other processes on the machine while the script runs.
  *
  * Uses the service key's admin API, so the account is created with its email
  * already confirmed. That sidesteps the confirmation email entirely — which
  * matters because Supabase's built-in mailer allows only a few messages an hour
  * and will refuse to send once that is used up.
  *
- * The account gets the `owner` role in a new organization, which is what the
- * admin panel checks. There is no separate admin login: the admin panel is
- * gated on your role, not on a second set of credentials.
+ * NOTE: this does not by itself grant the admin panel. That is gated on
+ * platform staff — NEXUS_PLATFORM_ADMIN_EMAILS, or a row in platform_staff —
+ * and not on a workspace role, because every user owns their own workspace and
+ * a workspace role could never be the gate.
  *
  * Requires the migration to have been run first.
  */
@@ -18,20 +24,35 @@
 import { createClient } from "@supabase/supabase-js";
 import { readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
+import { createInterface } from "node:readline/promises";
 
-const [, , emailArg, passwordArg, businessArg] = process.argv;
+const [, , emailArg, businessArg] = process.argv;
 
-if (!emailArg || !passwordArg) {
+if (!emailArg) {
   console.error(
-    "\nUsage: node scripts/create-admin.mjs <email> <password> [business name]\n\n" +
-      "Password must be at least 10 characters with an upper case letter,\n" +
+    "\nUsage: node scripts/create-admin.mjs <email> [business name]\n\n" +
+      "The password comes from ADMIN_PASSWORD, or is typed at the prompt.\n" +
+      "It must be at least 10 characters with an upper case letter,\n" +
       "a lower case letter and a number.\n",
   );
   process.exit(1);
 }
 
 const email = emailArg.trim().toLowerCase();
-const password = passwordArg;
+
+const password = await (async () => {
+  if (process.env.ADMIN_PASSWORD) return process.env.ADMIN_PASSWORD;
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  const answer = await rl.question(`Password for ${email}: `);
+  rl.close();
+  return answer;
+})();
+
+if (!password) {
+  console.error("\nNo password given.\n");
+  process.exit(1);
+}
+
 const businessName = (businessArg ?? "My Workspace").trim();
 
 if (
@@ -194,16 +215,38 @@ let organizationId;
     console.error(`  ✗ Could not grant the owner role: ${error.message}\n`);
     process.exit(1);
   }
-  console.log("  ✓ owner role granted (this is what unlocks the admin panel)");
+  console.log("  ✓ owner role granted in this workspace");
 }
+
+// --- 5. is this account platform staff? ------------------------------------
+/*
+ * Owning a workspace is not what opens the admin panel, and saying otherwise
+ * is how someone ends up staring at a "for platform staff" screen wondering
+ * what went wrong. Check the actual gate and report it.
+ */
+const staffList = (env.NEXUS_PLATFORM_ADMIN_EMAILS ?? env.NEXORA_PLATFORM_ADMIN_EMAILS ?? "")
+  .split(",")
+  .map((entry) => entry.trim().toLowerCase())
+  .filter(Boolean);
+
+const isStaff = staffList.includes(email);
 
 console.log(`
 Done. Sign in at http://localhost:3000/login
 
   Email     ${email}
   Username  ${username}
-  Password  the one you passed to this script
-
-The admin panel is at /admin. It is gated on your workspace role, so this
-account reaches it because it is the owner — there is no separate admin login.
+  Password  the one you just entered
 `);
+
+if (isStaff) {
+  console.log(`This account is platform staff, so /admin is open to it.\n`);
+} else {
+  console.log(
+    `This account is NOT platform staff, so /admin will refuse it.\n` +
+      `The admin panel is gated on who operates Nexus, not on who owns a\n` +
+      `workspace — every user owns one, so a workspace role cannot be the gate.\n\n` +
+      `To grant it, add the address to .env.local and restart the server:\n\n` +
+      `  NEXUS_PLATFORM_ADMIN_EMAILS=${[...staffList, email].join(",")}\n`,
+  );
+}
