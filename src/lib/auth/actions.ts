@@ -3,13 +3,15 @@
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { isSupabaseConfigured } from "@/lib/env";
+import { isSupabaseConfigured, SITE_URL } from "@/lib/env";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceClient, hasServiceClient } from "@/lib/supabase/admin";
 import { isSchemaReady, SCHEMA_MISSING_MESSAGE } from "@/lib/supabase/health";
 import { audit } from "@/lib/store";
 import { LOCAL_IDENTITY } from "@/lib/store/local";
 import { LOCAL_SESSION_COOKIE } from "./session";
+import { hardenAuthCookie } from "./cookies";
+import { resolveSiteOrigin, safeNextPath } from "./redirect";
 import { provisionWorkspace } from "./provision";
 
 /**
@@ -86,6 +88,18 @@ async function deriveUsername(email: string): Promise<string> {
   return `${padded}_${Date.now().toString(36).slice(-5)}`;
 }
 
+/**
+ * Origin for links we email to a user. Never the request's Origin header —
+ * see resolveSiteOrigin().
+ */
+async function siteOrigin(): Promise<string> {
+  return resolveSiteOrigin(
+    SITE_URL,
+    (await headers()).get("origin"),
+    process.env.NODE_ENV === "production",
+  );
+}
+
 async function requestContext() {
   const headerList = await headers();
   return {
@@ -158,7 +172,7 @@ export async function signUpAction(
    * go back to the emailed-link flow.
    */
   if (requiresEmailConfirmation()) {
-    const origin = (await headers()).get("origin") ?? "";
+    const origin = await siteOrigin();
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -374,24 +388,9 @@ export async function signInAction(
     .maybeSingle();
 
   void membership;
-  redirect(safeNext(next));
+  redirect(safeNextPath(next));
 }
 
-/**
- * `next` arrives from a form field, so it is attacker-controllable and cannot
- * be fed to redirect() as-is. Only same-origin paths are allowed: a bare "/"
- * prefix is not enough, because "//evil.com" is protocol-relative and would
- * leave the site.
- */
-function safeNext(candidate: string): string {
-  if (!candidate.startsWith("/") || candidate.startsWith("//")) return "/dashboard";
-  // Stale bookmarks to routes that no longer exist would land on a 404 right
-  // after a successful sign-in, which reads as a broken login.
-  if (candidate === "/onboarding" || candidate.startsWith("/onboarding/")) {
-    return "/dashboard";
-  }
-  return candidate;
-}
 
 export async function requestPasswordResetAction(
   _prev: AuthState,
@@ -411,7 +410,7 @@ export async function requestPasswordResetAction(
   const supabase = await getServerSupabase();
   if (!supabase) return genericSuccess;
 
-  const origin = (await headers()).get("origin") ?? "";
+  const origin = await siteOrigin();
   await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${origin}/reset-password`,
   });
@@ -475,13 +474,9 @@ export async function startLocalSessionAction(): Promise<void> {
     throw new Error("Local mode is unavailable once Supabase is connected.");
   }
   const store = await cookies();
-  store.set(LOCAL_SESSION_COOKIE, crypto.randomUUID(), {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 30,
-  });
+  // Session-only, like the Supabase cookies: this used to last 30 days, which
+  // meant closing the browser did not end the session.
+  store.set(LOCAL_SESSION_COOKIE, crypto.randomUUID(), hardenAuthCookie());
 
   await audit({
     organization_id: LOCAL_IDENTITY.organizationId,
@@ -523,7 +518,7 @@ export async function oauthSignInAction(
   const supabase = await getServerSupabase();
   if (!supabase) return { error: "Authentication is not available." };
 
-  const origin = (await headers()).get("origin") ?? "";
+  const origin = await siteOrigin();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider,
     options: {

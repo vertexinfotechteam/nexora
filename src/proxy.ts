@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { hardenAuthCookie } from "@/lib/auth/cookies";
 
 /**
  * Runs before every page request (Next.js 16 renamed `middleware` to `proxy`).
@@ -88,7 +89,8 @@ export async function proxy(request: NextRequest) {
           }
           response = NextResponse.next({ request: { headers: requestHeaders } });
           for (const { name, value, options } of cookiesToSet) {
-            response.cookies.set(name, value, options);
+            // Session-only, httpOnly, secure. See hardenAuthCookie().
+            response.cookies.set(name, value, hardenAuthCookie(options));
           }
         },
       },
@@ -101,30 +103,95 @@ export async function proxy(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (!user && !isPublic(pathname)) {
-      const redirect = request.nextUrl.clone();
-      redirect.pathname = "/login";
-      redirect.searchParams.set("next", pathname);
-      return NextResponse.redirect(redirect);
+      return bounceToLogin(request, csp, pathname);
     }
     if (user && (pathname === "/login" || pathname === "/signup")) {
       const redirect = request.nextUrl.clone();
       redirect.pathname = "/dashboard";
       redirect.search = "";
-      return NextResponse.redirect(redirect);
+      const bounce = NextResponse.redirect(redirect);
+      applySecurityHeaders(bounce, csp, pathname);
+      return bounce;
     }
   } else {
     // Local mode: a session cookie is set explicitly from the login screen.
     const hasLocalSession = request.cookies.has("nx_local_session");
     if (!hasLocalSession && !isPublic(pathname)) {
-      const redirect = request.nextUrl.clone();
-      redirect.pathname = "/login";
-      redirect.searchParams.set("next", pathname);
-      return NextResponse.redirect(redirect);
+      return bounceToLogin(request, csp, pathname);
     }
   }
 
-  response.headers.set("content-security-policy", csp);
+  applySecurityHeaders(response, csp, pathname);
   return response;
+}
+
+/**
+ * Sends an unauthenticated visitor to the sign-in screen.
+ *
+ * The path they were reaching for is preserved so they land where they meant
+ * to after signing in. Only the path and query are carried — never a full URL
+ * — so this cannot be turned into an open redirect, and the receiving end
+ * validates it again before using it.
+ */
+function bounceToLogin(
+  request: NextRequest,
+  csp: string,
+  pathname: string,
+): NextResponse {
+  const redirect = request.nextUrl.clone();
+  redirect.pathname = "/login";
+  redirect.search = "";
+  redirect.searchParams.set("next", pathname);
+
+  const response = NextResponse.redirect(redirect);
+  applySecurityHeaders(response, csp, pathname);
+  return response;
+}
+
+/**
+ * Headers applied to every response.
+ *
+ * The no-store rule on signed-in pages is the one that matters most here.
+ * Without it the browser is free to keep a rendered dashboard in its back /
+ * forward cache; after signing out, pressing Back re-displays that page —
+ * names, figures and all — because nothing goes to the server to be
+ * re-authorised. `no-store` forbids keeping the copy at all, so Back has to
+ * re-request the page and gets bounced to the sign-in screen.
+ */
+function applySecurityHeaders(
+  response: NextResponse,
+  csp: string,
+  pathname: string,
+): void {
+  response.headers.set("content-security-policy", csp);
+
+  // Never let a browser second-guess a declared content type.
+  response.headers.set("x-content-type-options", "nosniff");
+  // frame-ancestors already covers this; kept for older browsers.
+  response.headers.set("x-frame-options", "DENY");
+  // Send the origin off-site, never the full path of an internal page.
+  response.headers.set("referrer-policy", "strict-origin-when-cross-origin");
+  // Nothing here needs any of these, so refuse them outright.
+  response.headers.set(
+    "permissions-policy",
+    "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()",
+  );
+
+  if (process.env.NODE_ENV === "production") {
+    response.headers.set(
+      "strict-transport-security",
+      "max-age=63072000; includeSubDomains; preload",
+    );
+  }
+
+  if (!isPublic(pathname)) {
+    response.headers.set(
+      "cache-control",
+      "no-store, no-cache, must-revalidate, proxy-revalidate",
+    );
+    response.headers.set("pragma", "no-cache");
+    response.headers.set("expires", "0");
+  }
 }
 
 export const config = {

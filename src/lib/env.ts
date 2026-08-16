@@ -45,6 +45,15 @@ export function isSupabaseConfigured(): boolean {
   return getSupabaseConfig() !== null;
 }
 
+/**
+ * Public URL this deployment is served from, e.g. https://nexus.example.com
+ *
+ * Used to build the links emailed to users (confirmation, password reset,
+ * OAuth return). Those must never be built from the request's Origin header,
+ * which the caller controls — see resolveSiteOrigin().
+ */
+export const SITE_URL = read("NEXUS_SITE_URL") ?? read("NEXT_PUBLIC_SITE_URL");
+
 /** Where the app persists data when Supabase has not been connected yet. */
 export const LOCAL_DATA_DIR = read("NEXUS_DATA_DIR") ?? ".nexora";
 

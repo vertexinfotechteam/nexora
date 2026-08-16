@@ -20,7 +20,6 @@ import { cn } from "@/lib/utils";
 import type { Session } from "@/lib/store/types";
 import type { CreditBalance } from "@/lib/credits";
 import { CreditMeter } from "./credit-meter";
-import { ThemeToggle } from "@/components/theme/theme-toggle";
 
 export function TopBar({
   session,
@@ -93,7 +92,6 @@ export function TopBar({
 
       <div className="ml-auto flex items-center gap-1">
         <CreditMeter balance={credits} />
-        <ThemeToggle compact />
         <TopBarIcon label="AI insights" href="/ask-ai" icon={Sparkles} accent />
         <TopBarIcon label="Date range" icon={Calendar} />
         <TopBarIcon label="Filters" icon={Filter} />

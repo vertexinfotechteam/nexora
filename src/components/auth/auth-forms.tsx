@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
-import { AlertCircle, CheckCircle2, Loader2, Lock, Mail } from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2, Lock, Mail, ShieldCheck } from "lucide-react";
 import { Field, PasswordField, SocialButtons, TextField } from "./field";
 import type { AuthState } from "@/lib/auth/actions";
 
@@ -108,18 +108,20 @@ export function LoginForm({
           />
         </Field>
 
-        <div className="flex items-center justify-between">
-          <label className="flex cursor-pointer items-center gap-2 text-[12.5px] text-[var(--nx-text-muted)]">
-            <input
-              type="checkbox"
-              defaultChecked
-              className="h-4 w-4 cursor-pointer rounded border-[var(--nx-border-strong)] accent-[var(--nx-purple)]"
-            />
-            Remember me
-          </label>
+        {/*
+          There was a "Remember me" checkbox here. It carried no name, so it
+          was never submitted and never did anything — and now that the session
+          ends when the browser closes, it would be a promise the product
+          cannot keep. Replaced with a plain statement of what happens.
+        */}
+        <div className="flex items-center justify-between gap-3">
+          <p className="flex items-center gap-1.5 text-[12px] text-[var(--nx-text-muted)]">
+            <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-[var(--nx-accent)]" />
+            You stay signed in until you close this browser.
+          </p>
           <Link
             href="/forgot-password"
-            className="text-[12.5px] font-medium text-[var(--nx-purple)] hover:underline"
+            className="shrink-0 text-[12.5px] font-medium text-[var(--nx-purple)] hover:underline"
           >
             Forgot password?
           </Link>

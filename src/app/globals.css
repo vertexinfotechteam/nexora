@@ -5,10 +5,12 @@
    Powered by Vertex Infotech
 
    Every surface, border and text colour in the product resolves through the
-   semantic tokens below. Nothing hardcodes a hex, which is what lets the whole
-   application switch between light and dark without touching a component.
+   semantic tokens below. Nothing hardcodes a hex, so the palette is defined
+   in exactly one place.
 
-   Light is the default. `.dark` on <html> switches the palette.
+   There is one theme. A dark palette used to live alongside this one behind a
+   `.dark` class; it was removed along with the toggle, so the product renders
+   the same for every user on every device.
    ========================================================================= */
 
 :root {
@@ -123,105 +125,6 @@
   --nx-radius: 0.625rem;
 }
 
-.dark {
-  /* Premium AI data command centre: deep navy-black ground, with the mark's
-     emerald and a brighter mint as the only chromatic light sources. */
-  --nx-bg: #05070d;
-  --nx-surface: #090d16;
-  --nx-card: #0d1220;
-  --nx-inset: #080c15;
-  --nx-elevated: #141b2c;
-  --nx-elevated-hover: #1b2438;
-  --nx-hover: #111827;
-
-  --nx-border: #1c2438;
-  --nx-border-subtle: #141a29;
-  --nx-border-strong: #2b3550;
-
-  --nx-text: #eef2f9;
-  --nx-text-muted: #8f9bb3;
-  --nx-text-dim: #74809a;
-  --nx-text-faint: #55607a;
-
-  /*
-   * Dark mode reads the mark on a near-black ground, so the emerald is the
-   * brand colour here and a brighter mint carries the accents. The earlier
-   * violet/cyan pair looked good but belonged to no part of the logo.
-   */
-  --nx-purple: #1fae86;
-  --nx-purple-hover: #27c79a;
-  --nx-purple-active: #17916f;
-  /* Near-black on the bright emerald. White here measures 2.8:1 and is not
-     readable. */
-  --nx-purple-on: #04140e;
-  --nx-cyan: #2dd4bf;
-  --nx-accent: #4ade9f;
-  --nx-accent-hover: #6ceab4;
-  --nx-accent-active: #33c288;
-  --nx-accent-fg: #04140e;
-
-  --nx-success: #34d399;
-  --nx-warning: #fbbf24;
-  --nx-error: #f87171;
-
-  --nx-success-soft: rgba(52, 211, 153, 0.13);
-  --nx-success-fg: #6ee7b7;
-  --nx-warning-soft: rgba(251, 191, 36, 0.13);
-  --nx-warning-fg: #fcd34d;
-  --nx-error-soft: rgba(248, 113, 113, 0.13);
-  --nx-error-fg: #fca5a5;
-  --nx-purple-soft: rgba(31, 174, 134, 0.15);
-  --nx-purple-fg: #6ee7b7;
-  --nx-cyan-soft: rgba(45, 212, 191, 0.13);
-  --nx-cyan-fg: #5eead4;
-  --nx-accent-soft: rgba(74, 222, 159, 0.1);
-  --nx-accent-soft-strong: rgba(74, 222, 159, 0.16);
-  --nx-accent-fg-on-soft: #86efac;
-
-  --nx-accent-border: rgba(74, 222, 159, 0.35);
-  --nx-accent-border-strong: rgba(74, 222, 159, 0.5);
-  --nx-error-border: rgba(248, 113, 113, 0.4);
-  --nx-error-border-strong: rgba(248, 113, 113, 0.5);
-  --nx-success-border: rgba(52, 211, 153, 0.4);
-
-  /* The first series is the brand colour; the rest stay deliberately spread
-     around the wheel, because a chart with six greens is unreadable. */
-  --nx-series-1: #2bc490;
-  --nx-series-2: #2dd4bf;
-  --nx-series-3: #60a5fa;
-  --nx-series-4: #fbbf24;
-  --nx-series-5: #f472b6;
-  --nx-series-6: #a78bfa;
-  --nx-series-7: #34d399;
-  --nx-series-8: #94a3b8;
-  --nx-heat-base: #101728;
-  --nx-heat-rgb: 43, 196, 144;
-  --nx-heat-text-low: #8f9bb3;
-  --nx-heat-text-high: #05070d;
-
-  --nx-grid: #141d31;
-  --nx-axis: #74809a;
-  --nx-cursor: rgba(255, 255, 255, 0.04);
-  --nx-scroll-thumb: #232e46;
-  --nx-scroll-thumb-hover: #313e5c;
-  --nx-code: #7ee7bd;
-  --nx-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-  --nx-shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.65);
-
-  /* Ambient layer, read by the background canvas. */
-  --nx-ambient-1: 148, 163, 184;
-  --nx-ambient-2: 34, 197, 143;
-  --nx-ambient-opacity: 1;
-  --nx-glass: rgba(13, 18, 32, 0.72);
-  --nx-glass-border: rgba(43, 196, 144, 0.16);
-
-  /* On a near-black ground the slate half would disappear, so it lifts to a
-     light neutral while the green half keeps its identity. */
-  --nx-logo-dark: #e2e8f0;
-  --nx-logo-green: #22c58f;
-  --nx-logo-bar: #05070d;
-  --nx-logo-line: #05070d;
-}
 
 @theme inline {
   --color-background: var(--nx-bg);
@@ -261,10 +164,8 @@ body {
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   font-size: 13px;
-  /* Deliberately NOT transitioned. A transition on background-color whose value
-     comes from a custom property can freeze at the old colour when the variable
-     is swapped, leaving the page light while every child turns dark. Theme
-     switching is instant instead. */
+  /* One palette, so nothing swaps at runtime and no transition is needed. */
+  color-scheme: light;
 }
 
 ::-webkit-scrollbar {

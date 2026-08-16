@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseConfig } from "@/lib/env";
+import { hardenAuthCookie } from "@/lib/auth/cookies";
 
 /**
  * Request-scoped Supabase client that reads and writes the auth cookies.
@@ -24,7 +25,8 @@ export async function getServerSupabase(): Promise<SupabaseClient | null> {
       setAll(cookiesToSet) {
         try {
           for (const { name, value, options } of cookiesToSet) {
-            cookieStore.set(name, value, options);
+            // Session-only, httpOnly, secure. See hardenAuthCookie().
+            cookieStore.set(name, value, hardenAuthCookie(options));
           }
         } catch {
           // Called from a Server Component render, where cookies are readonly.

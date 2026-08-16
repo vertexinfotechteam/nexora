@@ -1,8 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import { headers } from "next/headers";
+
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
-import { ThemeScript } from "@/components/theme/theme-script";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -20,24 +19,25 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+// One palette, so the browser chrome does not follow the OS preference either.
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f5f6f8" },
-    { media: "(prefers-color-scheme: dark)", color: "#080b12" },
-  ],
+  themeColor: "#faf8f5",
+  colorScheme: "light",
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  // The CSP nonce is set per request in proxy.ts; inline scripts must carry it.
-  const nonce = (await headers()).get("x-nonce") ?? undefined;
-
+  /*
+   * No inline script and no hydration suppression.
+   *
+   * Both existed only for the theme: a blocking script had to set the dark
+   * class before first paint to avoid a flash, and that mutation made the
+   * server and client markup disagree. With one palette there is nothing to
+   * apply early and nothing to suppress.
+   */
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <ThemeScript nonce={nonce} />
-      </head>
+    <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { Menu, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LogoMark } from "@/components/brand/logo";
-import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { cn } from "@/lib/utils";
 
 const LINKS = [
@@ -65,7 +64,6 @@ export function LandingNavbar({ signedIn }: { signedIn: boolean }) {
         </ul>
 
         <div className="ml-auto flex items-center gap-1.5">
-          <ThemeToggle compact />
 
           {signedIn ? (
             <Button asChild size="sm" variant="primary">
