@@ -53,19 +53,25 @@ export const getSession = cache(async function getSession(): Promise<Session | n
   } = await client.auth.getUser();
   if (error || !user) return null;
 
-  const { data: profile } = await client
-    .from("profiles")
-    .select("username, display_name, onboarded_at")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  const { data: membership } = await client
-    .from("organization_members")
-    .select("organization_id, role, organizations(name, plan)")
-    .eq("user_id", user.id)
-    .order("created_at")
-    .limit(1)
-    .maybeSingle();
+  /*
+   * Both reads at once. Neither depends on the other, and they were awaited
+   * one after the other — two sequential round trips to a remote database on
+   * every request, for no reason beyond the order they were written in.
+   */
+  const [{ data: profile }, { data: membership }] = await Promise.all([
+    client
+      .from("profiles")
+      .select("username, display_name, onboarded_at")
+      .eq("user_id", user.id)
+      .maybeSingle(),
+    client
+      .from("organization_members")
+      .select("organization_id, role, organizations(name, plan)")
+      .eq("user_id", user.id)
+      .order("created_at")
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
   if (!profile || !membership) {
     // Authenticated, but no workspace yet. The app layout provisions one on
