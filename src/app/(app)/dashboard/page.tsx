@@ -82,8 +82,17 @@ export default async function DashboardPage() {
     <div className="space-y-3">
       <Header />
 
-      {/* Portfolio KPIs — counts of real objects, not invented business metrics */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {/*
+        Five KPI cards across, to the reference.
+
+        The labels are ours, not the reference's. That mock reads Total
+        Revenue, Conversion Rate, Avg. Order Value and Churn Rate — a shop's
+        numbers. Nexus never sees a customer's revenue; people upload their own
+        spreadsheets and it analyses those. Printing "$2,489,348" here would be
+        a figure nothing computed, on the first screen a user sees. The layout
+        is the reference's; the measurements are the ones that are real.
+      */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <StatCard
           label="Datasets ready"
           value={String(ready.length)}
@@ -108,9 +117,15 @@ export default async function DashboardPage() {
           sub={jobs[0] ? `last ${relativeTime(jobs[0].created_at)}` : "none yet"}
           icon={Activity}
         />
+        <StatCard
+          label="Reports ready"
+          value={String(reports.length)}
+          sub={reports.length > 0 ? "PDF and Excel available" : "none generated yet"}
+          icon={FileText}
+        />
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-[1fr_340px]">
+      <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_380px]">
         <div className="min-w-0 space-y-3">
           {/* Forecast / trend */}
           {forecast ? (
@@ -128,7 +143,7 @@ export default async function DashboardPage() {
                     : "no accuracy measure"}
                 </Badge>
               </CardHeader>
-              <CardBody className="p-2">
+              <CardBody className="min-w-0 overflow-hidden p-2">
                 <ChartView
                   spec={{
                     type: "line",

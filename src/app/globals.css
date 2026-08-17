@@ -14,25 +14,32 @@
    ========================================================================= */
 
 :root {
-  /* Surfaces - warm cream, matching the brand reference */
-  --nx-bg: #faf8f5;
-  --nx-surface: #f7f5f1;
+  /*
+   * Surfaces — white, very faintly cooled toward the mark's green.
+   *
+   * These were a warm cream, which read as beige beside an emerald logo and
+   * fought it. A neutral white lets the green be the only colour on the page.
+   */
+  --nx-bg: #f7faf9;
+  --nx-surface: #ffffff;
   --nx-card: #ffffff;
-  --nx-inset: #f5f2ed;
-  --nx-elevated: #efebe4;
-  --nx-elevated-hover: #e7e2d9;
-  --nx-hover: #f4f1ec;
+  --nx-inset: #f2f7f5;
+  --nx-elevated: #eaf2ef;
+  --nx-elevated-hover: #dfeae6;
+  --nx-hover: #f0f6f4;
 
   /* Borders */
-  --nx-border: #e6e1d8;
-  --nx-border-subtle: #f0ece5;
-  --nx-border-strong: #d2ccc0;
+  --nx-border: #e2ebe8;
+  --nx-border-subtle: #eef4f2;
+  --nx-border-strong: #cbdad5;
 
-  /* Text */
-  --nx-text: #1c1a17;
-  --nx-text-muted: #5c574f;
-  --nx-text-dim: #7a746a;
-  --nx-text-faint: #9a9386;
+  /* Text — neutral slate, taken from the mark's downstroke. */
+  --nx-text: #16211f;
+  --nx-text-muted: #4f5f5b;
+  /* Both darkened after measuring: #6b7b77 came out at 4.44:1 on a card and
+     #86938f at 3.19:1, under the 4.5 small text needs. */
+  --nx-text-dim: #667571;
+  --nx-text-faint: #697672;
 
   /*
    * Brand, taken from the mark.
@@ -92,20 +99,20 @@
   --nx-series-6: #157347;
   --nx-series-7: #8a7320;
   --nx-series-8: #6b6459;
-  --nx-heat-base: #f2efe9;
+  --nx-heat-base: #eef4f2;
   --nx-heat-rgb: 10, 74, 60;
   --nx-heat-text-low: #5c574f;
   --nx-heat-text-high: #ffffff;
 
   /* Chart + misc */
-  --nx-grid: #ece8e0;
-  --nx-axis: #9a9386;
+  --nx-grid: #e8f0ed;
+  --nx-axis: #697672;
   --nx-cursor: rgba(0, 0, 0, 0.035);
-  --nx-scroll-thumb: #d2ccc0;
-  --nx-scroll-thumb-hover: #b9b2a4;
+  --nx-scroll-thumb: #cbdad5;
+  --nx-scroll-thumb-hover: #adc2bb;
   --nx-code: #0a4a3c;
-  --nx-shadow: 0 1px 2px rgba(28, 26, 23, 0.04), 0 4px 12px rgba(28, 26, 23, 0.06);
-  --nx-shadow-lg: 0 8px 28px rgba(28, 26, 23, 0.12);
+  --nx-shadow: 0 1px 2px rgba(16, 33, 31, 0.04), 0 4px 12px rgba(16, 33, 31, 0.05);
+  --nx-shadow-lg: 0 8px 28px rgba(16, 33, 31, 0.11);
 
   /* Ambient layer. Light mode keeps it barely-there so the cream stays clean;
      the same canvas reads these values and simply draws fainter. */
@@ -1008,15 +1015,24 @@ body {
   --nx-rail-active-text: #f5faf9;
 }
 
+
 /**
- * Paint the page behind the dashboard too.
+ * Keep charts inside their column.
  *
- * The shell covers the viewport, but the body underneath it keeps the light
- * ground — which shows as a cream flash on overscroll and behind the scroll
- * gutter. Matching it here avoids threading a class onto <body> from a nested
- * layout, which Next does not allow.
+ * Recharts measures its parent, but a grid or flex item defaults to
+ * min-width:auto — it will not shrink below its content. At tablet width the
+ * chart held the column open to 786px inside a 524px slot and pushed the whole
+ * page into a horizontal scroll. Measured at 768px: document 1015px wide
+ * against a 768px viewport.
+ *
+ * Applied here rather than per chart so a chart added later cannot reintroduce
+ * it.
  */
-body:has(.nx-app-dark) {
-  background: #07151b;
-  color-scheme: dark;
+.recharts-responsive-container {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.recharts-wrapper {
+  max-width: 100%;
 }
