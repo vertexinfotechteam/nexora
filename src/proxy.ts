@@ -85,6 +85,36 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (supabaseUrl && supabaseKey) {
+    /*
+     * Skip the auth server entirely when no session cookie is present.
+     *
+     * getUser() is a network round trip to Supabase, and it ran on every
+     * request through this proxy — including every anonymous page load and
+     * every RSC payload fetch, none of which can possibly be authenticated.
+     * Measured at 6.5s in the proxy on a single navigation, which is also what
+     * made an RSC fetch time out and fall back to a full browser navigation.
+     *
+     * With no `sb-` cookie the call is guaranteed to return null, so not
+     * making it changes nothing about the outcome. The gate below still
+     * refuses protected paths, because "no cookie" and "getUser said no" lead
+     * to the same place.
+     *
+     * This is not a weaker check: a request that does carry a session cookie
+     * is still validated against the auth server on every request, which is
+     * the property that stops an edited cookie being trusted.
+     */
+    const hasAuthCookie = request.cookies
+      .getAll()
+      .some((cookie) => cookie.name.startsWith("sb-"));
+
+    if (!hasAuthCookie) {
+      if (!isPublic(pathname)) {
+        return bounceToLogin(request, csp, pathname);
+      }
+      applySecurityHeaders(response, csp, pathname);
+      return response;
+    }
+
     const supabase = createServerClient(supabaseUrl, supabaseKey, {
       cookies: {
         getAll() {

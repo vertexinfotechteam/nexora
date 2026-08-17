@@ -9,7 +9,6 @@ import {
   Gauge,
   LayoutDashboard,
   Lightbulb,
-  ScrollText,
   Settings,
   ShieldHalf,
   ShieldCheck,
@@ -175,14 +174,6 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: ShieldCheck,
         status: "live",
         hint: "Missing values, duplicates and outliers found in your files.",
-      },
-      {
-        // Was "Governance", which reads as a compliance department.
-        label: "Activity History",
-        href: "/governance",
-        icon: ScrollText,
-        status: "live",
-        hint: "Every sign-in, upload, analysis and export, with a timestamp.",
       },
       {
         // Was "Models", which suggests machine learning. It is saved formulas.

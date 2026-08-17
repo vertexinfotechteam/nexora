@@ -106,9 +106,21 @@ export async function POST(request: NextRequest) {
   const job = await createJob(session, { datasetId, question });
   const encoder = new TextEncoder();
 
+  /*
+   * `closed` and the heartbeat live outside start() so cancel() can reach
+   * them.
+   *
+   * When a user navigates away mid-analysis the browser drops the connection,
+   * Next cancels this stream, and everything inside start() carried on writing
+   * to a destination that no longer existed — which is the "destination stream
+   * closed early" in the log. Worse than the noise: an abandoned run kept
+   * burning a model call and a credit for a page nobody was looking at.
+   */
+  let closed = false;
+  let heartbeat: ReturnType<typeof setInterval> | undefined;
+
   const stream = new ReadableStream({
     async start(controller) {
-      let closed = false;
       const send = (event: string, data: unknown) => {
         if (closed) return;
         try {
@@ -122,7 +134,7 @@ export async function POST(request: NextRequest) {
 
       // Heartbeat keeps intermediaries from closing an idle connection during
       // a long model call.
-      const heartbeat = setInterval(() => {
+      heartbeat = setInterval(() => {
         if (!closed) {
           try {
             controller.enqueue(encoder.encode(": keep-alive\n\n"));
@@ -404,6 +416,19 @@ export async function POST(request: NextRequest) {
           }
         }
       }
+    },
+
+    /**
+     * The client went away.
+     *
+     * Marking the stream closed stops every later send() from touching a dead
+     * controller, and clearing the heartbeat stops the interval outliving the
+     * request. The analysis itself finishes its current step and then stops
+     * emitting, rather than being killed halfway through a database write.
+     */
+    cancel() {
+      closed = true;
+      if (heartbeat) clearInterval(heartbeat);
     },
   });
 

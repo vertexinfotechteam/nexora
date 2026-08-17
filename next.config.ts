@@ -43,7 +43,6 @@ const AUTHENTICATED_ROUTES = [
   "/datasets",
   "/explore",
   "/forecasting",
-  "/governance",
   "/metrics",
   "/models",
   "/recommendations",

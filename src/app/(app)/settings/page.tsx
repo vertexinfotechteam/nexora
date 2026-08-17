@@ -105,8 +105,14 @@ export default async function SettingsPage() {
               cannot prove against a computed value is not shown to you.
             </Assurance>
             <Assurance>
-              Sign-ins, uploads, analyses and exports are all recorded, and you
-              can read that history yourself under Activity History.
+              {/*
+                This used to end "…and you can read that history yourself under
+                Activity History". That page is gone, so the second half went
+                with it — a promise pointing at a screen that no longer exists
+                is worse than no promise. The recording itself is unchanged.
+              */}
+              Sign-ins, uploads, analyses and exports are all recorded, so there
+              is a full account of what happened to your data.
             </Assurance>
             <Assurance>
               Your password is never stored by this application, and closing
