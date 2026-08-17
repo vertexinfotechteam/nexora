@@ -15,6 +15,7 @@ import {
   sanitizeFileName,
   sha256,
 } from "@/lib/storage";
+import { enforceLimit } from "@/lib/security/guard";
 import { checkFileSignature, IngestError, validateUpload } from "@/lib/ingest/source";
 import { ensureDatasetLoaded } from "@/lib/ingest/loader";
 import { profileDataset } from "@/lib/ingest/profile";
@@ -33,6 +34,11 @@ export const maxDuration = 300;
  * upload is visible in the UI rather than silently missing.
  */
 export async function POST(request: NextRequest) {
+  // Abuse throttle. Returns a 429 and leaves the success path below
+  // exactly as it was.
+  const limited = await enforceLimit("upload");
+  if (limited) return limited;
+
   let session;
   try {
     session = await requireSession();

@@ -11,6 +11,7 @@ import { audit } from "@/lib/store";
 import { LOCAL_IDENTITY } from "@/lib/store/local";
 import { LOCAL_SESSION_COOKIE } from "./session";
 import { hardenAuthCookie } from "./cookies";
+import { limitAction } from "@/lib/security/guard";
 import { resolveSiteOrigin, safeNextPath } from "./redirect";
 import { provisionWorkspace } from "./provision";
 
@@ -130,6 +131,15 @@ export async function signUpAction(
   _prev: AuthState,
   formData: FormData,
 ): Promise<AuthState> {
+  // Throttle before anything else, so a flood cannot even reach the schema
+  // check or the mailer.
+  if (!(await limitAction("signup")).allowed) {
+    return {
+      error:
+        "Too many attempts from this connection. Wait a few minutes and try again.",
+    };
+  }
+
   if (!isSupabaseConfigured()) {
     return {
       error:
@@ -316,6 +326,13 @@ export async function signInAction(
   _prev: AuthState,
   formData: FormData,
 ): Promise<AuthState> {
+  if (!(await limitAction("login")).allowed) {
+    return {
+      error:
+        "Too many attempts from this connection. Wait a few minutes and try again.",
+    };
+  }
+
   const identifier = String(formData.get("identifier") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   const next = String(formData.get("next") ?? "/dashboard");
@@ -416,6 +433,16 @@ export async function requestPasswordResetAction(
     success:
       "If an account exists for that address, a reset link is on its way. Check your inbox and spam folder.",
   };
+
+  /*
+   * Throttled, and still answered with the same success message.
+   *
+   * This endpoint sends mail to an address the caller names, so unthrottled it
+   * is a way to have this product repeatedly email someone else. Returning the
+   * generic answer rather than a rate-limit error preserves the existing
+   * property that nothing here reveals whether an account exists.
+   */
+  if (!(await limitAction("passwordReset")).allowed) return genericSuccess;
 
   if (!isSupabaseConfigured() || !email.includes("@")) return genericSuccess;
 

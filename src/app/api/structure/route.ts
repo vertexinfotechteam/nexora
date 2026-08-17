@@ -3,6 +3,7 @@ import { z } from "zod";
 import { assertCanWrite, requireSession, SessionError } from "@/lib/auth/session";
 import { structureRawData } from "@/lib/structure/ai";
 import { audit } from "@/lib/store";
+import { enforceLimit } from "@/lib/security/guard";
 
 export const maxDuration = 120;
 
@@ -18,6 +19,11 @@ const bodySchema = z.object({
  * and charging for a paste would make people paste less and edit more by hand.
  */
 export async function POST(request: NextRequest) {
+  // Abuse throttle. Returns a 429 and leaves the success path below
+  // exactly as it was.
+  const limited = await enforceLimit("ai");
+  if (limited) return limited;
+
   let session;
   try {
     session = await requireSession();

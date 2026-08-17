@@ -4,11 +4,17 @@ import { audit, deleteDataset, getDataset, getDatasetFile } from "@/lib/store";
 import { clearMaterialized, deleteObject } from "@/lib/storage";
 import { closeEngine } from "@/lib/duckdb/engine";
 import { engineKeyFor } from "@/lib/ingest/loader";
+import { enforceLimit } from "@/lib/security/guard";
 
 export async function DELETE(
   _request: NextRequest,
   context: RouteContext<"/api/datasets/[id]">,
 ) {
+  // Abuse throttle. Returns a 429 and leaves the success path below
+  // exactly as it was.
+  const limited = await enforceLimit("read");
+  if (limited) return limited;
+
   let session;
   try {
     session = await requireSession();

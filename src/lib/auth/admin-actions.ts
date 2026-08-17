@@ -8,6 +8,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { getSession } from "@/lib/auth/session";
 import { getStaffMember } from "@/lib/admin/staff";
 import { audit } from "@/lib/store";
+import { limitAction } from "@/lib/security/guard";
 
 /**
  * Staff sign-in for the operations panel.
@@ -50,29 +51,6 @@ const schema = z.object({
   password: z.string().min(1),
 });
 
-/** Per-IP throttle. Tighter than the customer login: staff are few. */
-const WINDOW_MS = 15 * 60 * 1000;
-const MAX_ATTEMPTS = 8;
-const attempts = new Map<string, number[]>();
-
-function withinRateLimit(key: string): boolean {
-  const now = Date.now();
-  const hits = (attempts.get(key) ?? []).filter((at) => now - at < WINDOW_MS);
-  if (hits.length >= MAX_ATTEMPTS) {
-    attempts.set(key, hits);
-    return false;
-  }
-  hits.push(now);
-  attempts.set(key, hits);
-
-  if (attempts.size > 2000) {
-    for (const [entry, times] of attempts) {
-      if (times.every((at) => now - at >= WINDOW_MS)) attempts.delete(entry);
-    }
-  }
-  return true;
-}
-
 export async function adminSignInAction(
   _prev: AdminAuthState,
   formData: FormData,
@@ -105,7 +83,8 @@ export async function adminSignInAction(
     user_agent: headerList.get("user-agent") ?? undefined,
   };
 
-  if (!withinRateLimit(ip)) {
+  // Shared limiter; this used to keep its own Map.
+  if (!(await limitAction("adminLogin")).allowed) {
     await audit({
       organization_id: null,
       user_id: null,

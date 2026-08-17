@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { requireSession, SessionError } from "@/lib/auth/session";
 import { getDataset, getDatasetFile } from "@/lib/store";
 import { ensureDatasetLoaded, previewRows } from "@/lib/ingest/loader";
+import { enforceLimit } from "@/lib/security/guard";
 
 /**
  * Paginated dataset preview. Bounded server-side so a large table can never be
@@ -11,6 +12,11 @@ export async function GET(
   request: NextRequest,
   context: RouteContext<"/api/datasets/[id]/preview">,
 ) {
+  // Abuse throttle. Returns a 429 and leaves the success path below
+  // exactly as it was.
+  const limited = await enforceLimit("read");
+  if (limited) return limited;
+
   let session;
   try {
     session = await requireSession();

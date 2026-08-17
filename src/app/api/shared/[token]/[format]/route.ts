@@ -4,6 +4,7 @@ import { getBrandingForOrganization } from "@/lib/branding";
 import { renderDocumentPdf } from "@/lib/documents/pdf";
 import { renderDocumentExcel } from "@/lib/documents/excel";
 import { DOCUMENT_KIND_LABELS } from "@/lib/documents/types";
+import { enforceLimit } from "@/lib/security/guard";
 
 export const maxDuration = 120;
 
@@ -17,6 +18,11 @@ export async function GET(
   _request: NextRequest,
   context: RouteContext<"/api/shared/[token]/[format]">,
 ) {
+  // Abuse throttle. Returns a 429 and leaves the success path below
+  // exactly as it was.
+  const limited = await enforceLimit("sharedLink");
+  if (limited) return limited;
+
   const { token, format } = await context.params;
 
   if (format !== "pdf" && format !== "excel") {

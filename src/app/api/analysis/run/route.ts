@@ -25,6 +25,7 @@ import type {
   AnalysisResult,
   ReportPayload,
 } from "@/lib/store/types";
+import { enforceLimit } from "@/lib/security/guard";
 
 export const maxDuration = 300;
 
@@ -45,6 +46,11 @@ const bodySchema = z.object({
  * with real row counts and real timings, instead of a spinner.
  */
 export async function POST(request: NextRequest) {
+  // Abuse throttle. Returns a 429 and leaves the success path below
+  // exactly as it was.
+  const limited = await enforceLimit("ai");
+  if (limited) return limited;
+
   let session;
   try {
     session = await requireSession();

@@ -3,8 +3,14 @@ import { assertCanWrite, requireSession, SessionError } from "@/lib/auth/session
 import { listDocuments, saveDocument } from "@/lib/documents/store";
 import { audit } from "@/lib/store";
 import type { BusinessDocument } from "@/lib/documents/types";
+import { enforceLimit } from "@/lib/security/guard";
 
 export async function GET() {
+  // Abuse throttle. Returns a 429 and leaves the success path below
+  // exactly as it was.
+  const limited = await enforceLimit("read");
+  if (limited) return limited;
+
   try {
     const session = await requireSession();
     return NextResponse.json({ documents: await listDocuments(session) });
@@ -19,6 +25,11 @@ export async function GET() {
 
 /** Creates or updates a document. The whole editable body is sent as JSON. */
 export async function POST(request: NextRequest) {
+  // Abuse throttle. Returns a 429 and leaves the success path below
+  // exactly as it was.
+  const limited = await enforceLimit("read");
+  if (limited) return limited;
+
   let session;
   try {
     session = await requireSession();

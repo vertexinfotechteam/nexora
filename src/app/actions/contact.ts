@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { z } from "zod";
 import { getSession } from "@/lib/auth/session";
 import { saveContactMessage } from "@/lib/contact";
+import { limitAction } from "@/lib/security/guard";
 
 /**
  * Handles the public "ask our team" form.
@@ -36,38 +37,6 @@ const contactSchema = z.object({
   company_website: z.string().max(0).optional().or(z.literal("")),
 });
 
-/**
- * In-process submission throttle, keyed by IP.
- *
- * This is a single-instance guard, not a distributed one: it makes casual form
- * spam ineffective without pretending to be infrastructure it is not. Behind
- * multiple instances, put a real limiter at the edge.
- */
-const WINDOW_MS = 10 * 60 * 1000;
-const MAX_PER_WINDOW = 5;
-const recent = new Map<string, number[]>();
-
-function withinRateLimit(key: string): boolean {
-  const now = Date.now();
-  const hits = (recent.get(key) ?? []).filter((at) => now - at < WINDOW_MS);
-
-  if (hits.length >= MAX_PER_WINDOW) {
-    recent.set(key, hits);
-    return false;
-  }
-
-  hits.push(now);
-  recent.set(key, hits);
-
-  // Without this the map grows for the life of the process.
-  if (recent.size > 5000) {
-    for (const [entry, times] of recent) {
-      if (times.every((at) => now - at >= WINDOW_MS)) recent.delete(entry);
-    }
-  }
-  return true;
-}
-
 export async function submitContactAction(
   _prev: ContactState,
   formData: FormData,
@@ -96,7 +65,7 @@ export async function submitContactAction(
     headerList.get("x-real-ip") ||
     "unknown";
 
-  if (!withinRateLimit(ip)) {
+  if (!(await limitAction("contact")).allowed) {
     return {
       error:
         "That is a few messages in a short time. Give it a few minutes, or email us directly.",

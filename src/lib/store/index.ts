@@ -106,6 +106,7 @@ export async function updateDataset(
     .from("datasets")
     .update(withStamp)
     .eq("id", id)
+    .eq("organization_id", session.organizationId)
     .eq("organization_id", session.organizationId);
   if (error) throw new Error(`Could not update dataset: ${error.message}`);
 }
@@ -145,6 +146,7 @@ export async function getDataset(
     .from("datasets")
     .select("*")
     .eq("id", id)
+    .eq("organization_id", session.organizationId)
     .maybeSingle();
   if (error) throw new Error(`Could not load dataset: ${error.message}`);
   return (data as Dataset) ?? null;
@@ -167,6 +169,7 @@ export async function deleteDataset(
     .from("datasets")
     .delete()
     .eq("id", id)
+    .eq("organization_id", session.organizationId)
     .eq("organization_id", session.organizationId);
   if (error) throw new Error(`Could not delete dataset: ${error.message}`);
 }
@@ -362,6 +365,7 @@ export async function updateJob(
     .from("analysis_jobs")
     .update(patch)
     .eq("id", id)
+    .eq("organization_id", session.organizationId)
     .eq("organization_id", session.organizationId);
   if (error) throw new Error(`Could not update analysis: ${error.message}`);
 }
@@ -382,6 +386,7 @@ export async function getJob(
     .from("analysis_jobs")
     .select("*")
     .eq("id", id)
+    .eq("organization_id", session.organizationId)
     .maybeSingle();
   if (error) throw new Error(`Could not load analysis: ${error.message}`);
   return (data as AnalysisJob) ?? null;
@@ -647,6 +652,7 @@ export async function getReport(
     .from("reports")
     .select("*")
     .eq("id", id)
+    .eq("organization_id", session.organizationId)
     .maybeSingle();
   if (error) throw new Error(`Could not load report: ${error.message}`);
   return (data as Report) ?? null;

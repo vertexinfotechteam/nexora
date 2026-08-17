@@ -2,11 +2,17 @@ import { NextResponse, type NextRequest } from "next/server";
 import { requireSession, SessionError } from "@/lib/auth/session";
 import { audit, getDatasetFile } from "@/lib/store";
 import { getObject } from "@/lib/storage";
+import { enforceLimit } from "@/lib/security/guard";
 
 export async function GET(
   _request: NextRequest,
   context: RouteContext<"/api/datasets/[id]/download">,
 ) {
+  // Abuse throttle. Returns a 429 and leaves the success path below
+  // exactly as it was.
+  const limited = await enforceLimit("export");
+  if (limited) return limited;
+
   let session;
   try {
     session = await requireSession();

@@ -4,12 +4,18 @@ import {
   requireSession,
   SessionError,
 } from "@/lib/auth/session";
+import { enforceLimit } from "@/lib/security/guard";
 import { BRANDING_LIMITS, getBranding, saveBranding, toDataUrl } from "@/lib/branding";
 import { audit } from "@/lib/store";
 
 export const maxDuration = 60;
 
 export async function GET() {
+  // Abuse throttle. Returns a 429 and leaves the success path below
+  // exactly as it was.
+  const limited = await enforceLimit("read");
+  if (limited) return limited;
+
   try {
     const session = await requireSession();
     return NextResponse.json(await getBranding(session));
@@ -28,6 +34,11 @@ export async function GET() {
  * generated PDFs and workbooks.
  */
 export async function POST(request: NextRequest) {
+  // Abuse throttle. Returns a 429 and leaves the success path below
+  // exactly as it was.
+  const limited = await enforceLimit("read");
+  if (limited) return limited;
+
   let session;
   try {
     session = await requireSession();

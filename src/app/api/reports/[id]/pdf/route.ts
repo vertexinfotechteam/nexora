@@ -3,6 +3,7 @@ import { requireSession, SessionError } from "@/lib/auth/session";
 import { audit, getReport } from "@/lib/store";
 import { renderReportPdf } from "@/lib/report/pdf";
 import { getBranding } from "@/lib/branding";
+import { enforceLimit } from "@/lib/security/guard";
 
 export const maxDuration = 120;
 
@@ -10,6 +11,11 @@ export async function GET(
   request: NextRequest,
   context: RouteContext<"/api/reports/[id]/pdf">,
 ) {
+  // Abuse throttle. Returns a 429 and leaves the success path below
+  // exactly as it was.
+  const limited = await enforceLimit("export");
+  if (limited) return limited;
+
   let session;
   try {
     session = await requireSession();

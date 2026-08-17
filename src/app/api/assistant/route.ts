@@ -5,6 +5,7 @@ import {
   ASSISTANT_SYSTEM_PROMPT,
   findRelevant,
 } from "@/lib/ai/assistant";
+import { enforceLimit } from "@/lib/security/guard";
 import { completeWithFallback, hasAiProvider } from "@/lib/ai/provider";
 import { sanitizeUntrusted } from "@/lib/ai/prompts";
 
@@ -36,6 +37,11 @@ function rateLimited(key: string): boolean {
 }
 
 export async function POST(request: NextRequest) {
+  // Abuse throttle. Returns a 429 and leaves the success path below
+  // exactly as it was.
+  const limited = await enforceLimit("ai");
+  if (limited) return limited;
+
   const ip =
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
   if (rateLimited(ip)) {
