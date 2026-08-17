@@ -4,6 +4,7 @@ import { audit, getReport } from "@/lib/store";
 import { getBranding } from "@/lib/branding";
 import { renderReportExcel } from "@/lib/report/excel";
 import { enforceLimit } from "@/lib/security/guard";
+import { isUuid } from "@/lib/security/validate";
 
 export const maxDuration = 120;
 
@@ -32,6 +33,12 @@ export async function GET(
   }
 
   const { id } = await context.params;
+  // The path segment is untrusted. Without this the id reaches Postgres, the
+  // uuid cast throws, and the route answers 500 instead of 404.
+  if (!isUuid(id)) {
+    return NextResponse.json({ error: "Not found." }, { status: 404 });
+  }
+
   const report = await getReport(session, id);
   if (!report) {
     return NextResponse.json({ error: "Report not found." }, { status: 404 });

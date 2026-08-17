@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { assertCanWrite, requireSession, SessionError } from "@/lib/auth/session";
 import { ensureShareToken, revokeShareToken } from "@/lib/documents/share";
 import { audit } from "@/lib/store";
+import { isUuid } from "@/lib/security/validate";
 
 /** Creates (or returns) the public link for a document. */
 export async function POST(
@@ -22,6 +23,12 @@ export async function POST(
   }
 
   const { id } = await context.params;
+  // The path segment is untrusted. Without this the id reaches Postgres, the
+  // uuid cast throws, and the route answers 500 instead of 404.
+  if (!isUuid(id)) {
+    return NextResponse.json({ error: "Not found." }, { status: 404 });
+  }
+
   const headerList = await headers();
   const origin =
     headerList.get("origin") ??
@@ -61,6 +68,12 @@ export async function DELETE(
   }
 
   const { id } = await context.params;
+  // The path segment is untrusted. Without this the id reaches Postgres, the
+  // uuid cast throws, and the route answers 500 instead of 404.
+  if (!isUuid(id)) {
+    return NextResponse.json({ error: "Not found." }, { status: 404 });
+  }
+
   const ok = await revokeShareToken(session, id);
   if (!ok) {
     return NextResponse.json({ error: "Document not found." }, { status: 404 });

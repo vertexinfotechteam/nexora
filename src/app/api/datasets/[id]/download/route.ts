@@ -3,6 +3,7 @@ import { requireSession, SessionError } from "@/lib/auth/session";
 import { audit, getDatasetFile } from "@/lib/store";
 import { getObject } from "@/lib/storage";
 import { enforceLimit } from "@/lib/security/guard";
+import { isUuid } from "@/lib/security/validate";
 
 export async function GET(
   _request: NextRequest,
@@ -25,6 +26,12 @@ export async function GET(
   }
 
   const { id } = await context.params;
+  // The path segment is untrusted. Without this the id reaches Postgres, the
+  // uuid cast throws, and the route answers 500 instead of 404.
+  if (!isUuid(id)) {
+    return NextResponse.json({ error: "Not found." }, { status: 404 });
+  }
+
   // Scoped by organization inside the store, so this cannot reach another tenant.
   const file = await getDatasetFile(session, id);
   if (!file) {

@@ -6,6 +6,7 @@ import { audit } from "@/lib/store";
 import { DOCUMENT_KIND_LABELS } from "@/lib/documents/types";
 import { renderDocumentExcel } from "@/lib/documents/excel";
 import { enforceLimit } from "@/lib/security/guard";
+import { isUuid } from "@/lib/security/validate";
 
 export const maxDuration = 120;
 
@@ -30,6 +31,12 @@ export async function GET(
   }
 
   const { id } = await context.params;
+  // The path segment is untrusted. Without this the id reaches Postgres, the
+  // uuid cast throws, and the route answers 500 instead of 404.
+  if (!isUuid(id)) {
+    return NextResponse.json({ error: "Not found." }, { status: 404 });
+  }
+
   const document = await getDocument(session, id);
   if (!document) {
     return NextResponse.json({ error: "Document not found." }, { status: 404 });

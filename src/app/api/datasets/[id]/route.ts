@@ -5,6 +5,7 @@ import { clearMaterialized, deleteObject } from "@/lib/storage";
 import { closeEngine } from "@/lib/duckdb/engine";
 import { engineKeyFor } from "@/lib/ingest/loader";
 import { enforceLimit } from "@/lib/security/guard";
+import { isUuid } from "@/lib/security/validate";
 
 export async function DELETE(
   _request: NextRequest,
@@ -28,6 +29,12 @@ export async function DELETE(
   }
 
   const { id } = await context.params;
+  // The path segment is untrusted. Without this the id reaches Postgres, the
+  // uuid cast throws, and the route answers 500 instead of 404.
+  if (!isUuid(id)) {
+    return NextResponse.json({ error: "Not found." }, { status: 404 });
+  }
+
   const dataset = await getDataset(session, id);
   if (!dataset) {
     return NextResponse.json({ error: "Dataset not found." }, { status: 404 });

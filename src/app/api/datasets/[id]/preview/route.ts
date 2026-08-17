@@ -3,6 +3,7 @@ import { requireSession, SessionError } from "@/lib/auth/session";
 import { getDataset, getDatasetFile } from "@/lib/store";
 import { ensureDatasetLoaded, previewRows } from "@/lib/ingest/loader";
 import { enforceLimit } from "@/lib/security/guard";
+import { isUuid } from "@/lib/security/validate";
 
 /**
  * Paginated dataset preview. Bounded server-side so a large table can never be
@@ -29,6 +30,12 @@ export async function GET(
   }
 
   const { id } = await context.params;
+  // The path segment is untrusted. Without this the id reaches Postgres, the
+  // uuid cast throws, and the route answers 500 instead of 404.
+  if (!isUuid(id)) {
+    return NextResponse.json({ error: "Not found." }, { status: 404 });
+  }
+
   const dataset = await getDataset(session, id);
   const file = await getDatasetFile(session, id);
   if (!dataset || !file) {

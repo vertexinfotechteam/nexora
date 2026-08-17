@@ -5,6 +5,7 @@ import { renderDocumentPdf } from "@/lib/documents/pdf";
 import { renderDocumentExcel } from "@/lib/documents/excel";
 import { DOCUMENT_KIND_LABELS } from "@/lib/documents/types";
 import { enforceLimit } from "@/lib/security/guard";
+import { isExportFormat, isShareToken } from "@/lib/security/validate";
 
 export const maxDuration = 120;
 
@@ -25,8 +26,15 @@ export async function GET(
 
   const { token, format } = await context.params;
 
-  if (format !== "pdf" && format !== "excel") {
-    return NextResponse.json({ error: "Unknown format." }, { status: 400 });
+  /*
+   * Both segments are checked for shape before anything is looked up.
+   *
+   * A token that could not have been issued — wrong alphabet, wrong length —
+   * is refused without a database round trip, which is also what stops this
+   * endpoint being a cheap way to probe for valid tokens.
+   */
+  if (!isShareToken(token) || !isExportFormat(format)) {
+    return NextResponse.json({ error: "Not found." }, { status: 404 });
   }
 
   const document = await getSharedDocument(token);
