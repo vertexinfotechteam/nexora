@@ -422,20 +422,33 @@ function StatCard({
   icon: React.ComponentType<{ className?: string }>;
 }) {
   return (
-    <Card>
+    /*
+     * Proportions follow the reference: a rounded icon tile, the label beside
+     * it, the figure dominant beneath, and a quiet line of context under that.
+     *
+     * The reference also puts a percentage delta and a sparkline on each card.
+     * Neither is here, because neither exists for these figures — they are
+     * counts of datasets, rows and analyses, with no prior period to compare
+     * against and no series to draw. Inventing either would put a number on
+     * screen that nothing computed, which is the one thing this product
+     * promises it will never do.
+     */
+    <Card className="transition-colors hover:bg-[var(--nx-elevated)]">
       <CardBody className="p-4">
         <div className="flex items-center gap-2.5">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-[var(--nx-accent-soft-strong)]">
-            <Icon className="h-[15px] w-[15px] text-[var(--nx-accent)]" />
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--nx-accent-soft-strong)]">
+            <Icon className="h-4 w-4 text-[var(--nx-accent)]" />
           </span>
           <p className="text-[12.5px] font-medium text-[var(--nx-text-muted)]">
             {label}
           </p>
         </div>
-        <p className="mt-3 text-[27px] font-semibold leading-none tracking-tight">
+        <p className="mt-4 text-[30px] font-semibold leading-none tracking-tight text-[var(--nx-text)]">
           {value}
         </p>
-        <p className="mt-2 text-[11px] text-[var(--nx-text-faint)]">{sub}</p>
+        <p className="mt-2.5 text-[11px] leading-snug text-[var(--nx-text-faint)]">
+          {sub}
+        </p>
       </CardBody>
     </Card>
   );
