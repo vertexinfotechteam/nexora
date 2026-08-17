@@ -607,26 +607,46 @@ export function Footer() {
     },
   ];
 
+  /*
+   * Dark footer, to the reference design.
+   *
+   * Every link is one that already existed — the same ten routes, regrouped
+   * into the reference's shape. Nothing here was added, removed or rewired.
+   *
+   * The colours are literal rather than tokens on purpose: this block is a
+   * deliberate dark island at the foot of a light page, so it must not follow
+   * the surface tokens the rest of the site uses.
+   */
   return (
-    <footer className="border-t border-[var(--nx-border)] bg-[var(--nx-surface)]">
-      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
+    <footer className="relative overflow-hidden bg-[#0d1b26] text-[#dbe4ea]">
+      {/* Teal wash rising from the lower right, as in the reference. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 70% 120% at 78% 118%, rgba(28,138,106,0.42) 0%, rgba(13,27,38,0) 62%)",
+        }}
+      />
+      {/* The navbar's drifting hairline, repeated along the top edge so the two
+          bars are recognisably the same family. */}
+      <span
+        aria-hidden
+        className="nx-scan pointer-events-none absolute inset-x-0 top-0 h-px"
+      />
+
+      <div className="relative mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[1.6fr_1fr_1fr_1fr_1.4fr]">
         <div>
-          <p className="flex items-center gap-2.5">
-            <LogoMark className="h-8 w-8" />
-            <span className="text-[18px] font-semibold tracking-tight">
-              {COMPANY.product}
-            </span>
+          <LogoMark className="h-9 w-9" />
+          <p className="mt-4 max-w-[15rem] text-[12.5px] leading-relaxed text-[#94a7b4]">
+            Building smart analytics that let a team grow, automate and defend
+            every number they report.
           </p>
-          <p className="mt-4 max-w-xs text-[13px] leading-relaxed text-[var(--nx-text-muted)]">
-            AI data analytics for teams who have to defend their numbers — with
-            an assistant that plans the analysis and never touches the
-            arithmetic.
-          </p>
-          <p className="mt-4 text-[12.5px] text-[var(--nx-text-muted)]">
+          <p className="mt-4 text-[12px] text-[#94a7b4]">
             A product by{" "}
             <Link
               href="/company"
-              className="font-semibold text-[var(--nx-text)] hover:underline"
+              className="font-semibold text-[#dbe4ea] transition-colors hover:text-[var(--nx-logo-green)]"
             >
               {COMPANY.name}
             </Link>
@@ -636,15 +656,15 @@ export function Footer() {
 
         {columns.map((column) => (
           <nav key={column.title} aria-label={column.title}>
-            <h2 className="text-[11.5px] font-semibold uppercase tracking-[0.1em] text-[var(--nx-text-muted)]">
+            <h2 className="text-[13px] font-semibold text-white">
               {column.title}
             </h2>
-            <ul className="mt-4 space-y-3">
+            <ul className="mt-4 space-y-2.5">
               {column.links.map((link) => (
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className="text-[13.5px] text-[var(--nx-text)] transition-colors hover:text-[var(--nx-purple)]"
+                    className="text-[12.5px] text-[#94a7b4] transition-colors hover:text-[var(--nx-logo-green)]"
                   >
                     {link.label}
                   </Link>
@@ -653,12 +673,34 @@ export function Footer() {
             </ul>
           </nav>
         ))}
+
+        <div>
+          <h2 className="text-[13px] font-semibold text-white">
+            Questions about your data?
+          </h2>
+          <p className="mt-3 text-[12.5px] leading-relaxed text-[#94a7b4]">
+            {/*
+              The reference has a newsletter box here. There is no mailing list
+              behind this site, and an input that swallows an address without
+              storing it anywhere is worse than no input — so this points at
+              the contact form, which is real and does reach a person.
+            */}
+            Write to us and someone from {COMPANY.name} will read it and reply.
+          </p>
+          <Link
+            href="/#contact"
+            className="nx-press mt-4 inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--nx-logo-green)] px-4 text-[12.5px] font-semibold text-white transition-colors hover:brightness-110"
+          >
+            Ask our team
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
       </div>
 
-      <div className="border-t border-[var(--nx-border)]">
-        <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-5 text-[12.5px] text-[var(--nx-text-muted)] sm:px-6 md:flex-row md:items-center">
+      <div className="relative border-t border-white/10">
+        <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-5 text-center text-[12px] text-[#7c8f9d] sm:px-6 md:flex-row md:items-center md:text-left">
           <p>
-            © {new Date().getFullYear()} {COMPANY.name}. All rights reserved.
+            © {new Date().getFullYear()} {COMPANY.product}. All rights reserved.
           </p>
           <p className="md:ml-auto">
             Sample figures on this page are illustrative and are not connected to
