@@ -6,6 +6,7 @@ import { AppShell } from "@/components/shell/app-shell";
 import { getCreditBalance } from "@/lib/credits";
 import { listNotifications } from "@/lib/notifications";
 import { getStaffMember } from "@/lib/admin/staff";
+import { PLANS, planForTier } from "@/lib/plans";
 
 export default async function AppLayout({
   children,
@@ -60,6 +61,14 @@ export default async function AppLayout({
        * to the panel they were entitled to. Both directions were wrong.
        */
       isPlatformStaff={Boolean(staff)}
+      /*
+       * Only "free" exists as a real subscription today — no payment provider
+       * is connected, so nothing can move an account off it. Mapping through
+       * planForTier keeps the gate honest now and correct the moment paid
+       * subscriptions become real, rather than hard-coding "free" here and
+       * having to remember this line later.
+       */
+      planFeatures={PLANS[planForTier(session.plan)].features}
     >
       {children}
     </AppShell>

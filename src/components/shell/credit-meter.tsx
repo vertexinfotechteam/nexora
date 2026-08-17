@@ -33,7 +33,7 @@ export function CreditMeter({ balance }: { balance: CreditBalance }) {
 
   return (
     <Link
-      href="/settings"
+      href="/upgrade"
       title={`${balance.remaining} of ${balance.limit} AI analysis credits remaining on the ${balance.plan.toUpperCase()} plan`}
       className={cn(
         "hidden items-center gap-2 rounded-md border px-2 py-1 transition-colors sm:flex",

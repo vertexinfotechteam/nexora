@@ -1,21 +1,18 @@
 import type { Metadata } from "next";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import { requireSession } from "@/lib/auth/session";
-import { isSupabaseConfigured } from "@/lib/env";
-import { getAvailableAiProviders } from "@/lib/env";
 import { listDatasets, listJobs, listReports } from "@/lib/store";
 import {
-  Badge,
   Card,
   CardBody,
   CardHeader,
   CardTitle,
-  SectionLabel,
 } from "@/components/ui/primitives";
 import { formatNumber } from "@/lib/utils";
 import { getBranding } from "@/lib/branding";
 import { getCreditBalance } from "@/lib/credits";
 import { BrandingForm } from "@/components/settings/branding-form";
+import { COMPANY } from "@/lib/team";
 
 export const metadata: Metadata = { title: "Settings" };
 export const dynamic = "force-dynamic";
@@ -30,7 +27,6 @@ export default async function SettingsPage() {
     getCreditBalance(session),
   ]);
 
-  const providers = getAvailableAiProviders();
   const totalRows = datasets.reduce((sum, d) => sum + (d.row_count ?? 0), 0);
   const totalBytes = datasets.reduce((sum, d) => sum + (d.size_bytes ?? 0), 0);
 
@@ -39,8 +35,7 @@ export default async function SettingsPage() {
       <div>
         <h1 className="text-[15px] font-semibold tracking-tight">Settings</h1>
         <p className="text-[12px] text-[var(--nx-text-muted)]">
-          Configuration is read from the server environment. Secrets are never
-          sent to the browser.
+          Your account, your branding, and how much of your plan you have used.
         </p>
       </div>
 
@@ -67,74 +62,56 @@ export default async function SettingsPage() {
           where it is read in context.
         */}
 
-        {/* AI settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle>AI settings</CardTitle>
-          </CardHeader>
-          <CardBody className="p-4">
-            {providers.length === 0 ? (
-              <p className="text-[12px] leading-relaxed text-[var(--nx-text-muted)]">
-                No AI provider is configured. Analyses still run — profiling,
-                measures, trends, anomaly detection, forecasting and
-                recommendations are all statistical — but questions are not
-                interpreted and summaries are assembled from computed values.
-                Add <code className="font-mono">ANTHROPIC_API_KEY</code>,{" "}
-                <code className="font-mono">GEMINI_API_KEY</code>,{" "}
-                <code className="font-mono">OPENAI_API_KEY</code> or{" "}
-                <code className="font-mono">OLLAMA_BASE_URL</code> to{" "}
-                <code className="font-mono">.env.local</code>.
-              </p>
-            ) : (
-              <>
-                <SectionLabel className="mb-2">
-                  Configured providers, in fallback order
-                </SectionLabel>
-                <ul className="space-y-1.5">
-                  {providers.map((provider, index) => (
-                    <li
-                      key={provider.id}
-                      className="flex items-center justify-between gap-2 border-b border-[var(--nx-border-subtle)] pb-1.5"
-                    >
-                      <span className="flex items-center gap-2 text-[12px]">
-                        <span className="font-mono text-[10px] text-[var(--nx-text-faint)]">
-                          {index + 1}
-                        </span>
-                        {provider.id}
-                        {index === 0 ? <Badge tone="success">primary</Badge> : null}
-                      </span>
-                      <span className="font-mono text-[11px] text-[var(--nx-text-muted)]">
-                        {provider.model}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-                <p className="mt-2 text-[10.5px] leading-relaxed text-[var(--nx-text-faint)]">
-                  Keys are read on the server only. Every figure the model quotes
-                  is verified against a computed value before it is shown.
-                </p>
-              </>
-            )}
-          </CardBody>
-        </Card>
+        {/*
+          What used to be here: an "AI settings" card naming the model vendors
+          and exact model versions in fallback order, and a "Security" card
+          ticking off each individual control by name.
 
-        {/* Security */}
+          Both were written for whoever built the product, and both are now
+          removed from the customer's view, because between them they handed a
+          stranger a map:
+
+            - Naming the model and version tells an attacker precisely which
+              jailbreak and prompt-injection techniques to bring, and which
+              vendor's quirks to probe.
+            - Naming each control tells them which defences exist. Worse, the
+              ticks were conditional — a misconfigured deployment rendered a
+              visible cross next to "Row Level Security policies", which
+              advertises the one thing you would never want advertised.
+            - The empty state listed the exact environment variable names, i.e.
+              the configuration surface worth attacking.
+
+          What a customer actually needs to know is the promise, not the
+          mechanism, so that is what is stated below. The full detail is still
+          available to platform staff in the admin panel, where the audience is
+          the people who operate it.
+        */}
         <Card>
           <CardHeader>
-            <CardTitle>Security</CardTitle>
+            <CardTitle>How your data is handled</CardTitle>
           </CardHeader>
           <CardBody className="space-y-2 p-4">
-            <Check
-              ok={isSupabaseConfigured()}
-              label="Supabase Auth (passwords never stored by this app)"
-            />
-            <Check ok={isSupabaseConfigured()} label="Row Level Security policies" />
-            <Check ok label="Content-Security-Policy with per-request nonce" />
-            <Check ok label="Read-only SQL validation on AI queries" />
-            <Check ok label="Sealed query engine (no network, no filesystem)" />
-            <Check ok label="Prompt-injection fencing on dataset content" />
-            <Check ok label="Numeric output verified against computations" />
-            <Check ok label="Append-only audit log" />
+            <Assurance>
+              Your files are private to your account. Nobody else using Nexus
+              can see them.
+            </Assurance>
+            <Assurance>
+              Your data is never used to train an AI model, and is not shared
+              with anyone outside {COMPANY.name}.
+            </Assurance>
+            <Assurance>
+              Every figure in a report is calculated from your file. The AI
+              explains and plans; it never does the arithmetic, and anything it
+              cannot prove against a computed value is not shown to you.
+            </Assurance>
+            <Assurance>
+              Sign-ins, uploads, analyses and exports are all recorded, and you
+              can read that history yourself under Activity History.
+            </Assurance>
+            <Assurance>
+              Your password is never stored by this application, and closing
+              your browser ends the session.
+            </Assurance>
           </CardBody>
         </Card>
 
@@ -144,9 +121,7 @@ export default async function SettingsPage() {
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Usage</CardTitle>
-            <span className="text-[10.5px] text-[var(--nx-text-faint)]">
-              tracked for billing readiness
-            </span>
+
           </CardHeader>
           <CardBody className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-6">
             <Metric
@@ -177,19 +152,19 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Check({ ok, label }: { ok: boolean; label: string }) {
+/**
+ * One promise, stated plainly.
+ *
+ * Unconditional by design. The previous version rendered a cross when a
+ * control was not active, which turned this list into a live report of which
+ * protections were missing.
+ */
+function Assurance({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex items-start gap-2">
-      {ok ? (
-        <CheckCircle2 className="mt-px h-3.5 w-3.5 shrink-0 text-[var(--nx-success)]" />
-      ) : (
-        <XCircle className="mt-px h-3.5 w-3.5 shrink-0 text-[var(--nx-text-faint)]" />
-      )}
-      <span
-        className={`text-[12px] leading-snug ${ok ? "text-[var(--nx-text)]" : "text-[var(--nx-text-faint)]"}`}
-      >
-        {label}
-        {!ok ? " — needs Supabase" : ""}
+      <CheckCircle2 className="mt-px h-3.5 w-3.5 shrink-0 text-[var(--nx-success)]" />
+      <span className="text-[12px] leading-relaxed text-[var(--nx-text)]">
+        {children}
       </span>
     </div>
   );

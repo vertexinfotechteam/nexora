@@ -3,20 +3,24 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { ChevronLeft, PanelLeft, Sparkles, X } from "lucide-react";
+import { ChevronLeft, Lock, PanelLeft, Sparkles, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NAV_GROUPS } from "./nav-config";
 import { Badge } from "@/components/ui/primitives";
 import { LogoMark } from "@/components/brand/logo";
+import type { Feature } from "@/lib/plans";
 
 export function Sidebar({
   mobileOpen,
   onMobileClose,
   isAdmin,
+  planFeatures,
 }: {
   mobileOpen: boolean;
   onMobileClose: () => void;
   isAdmin: boolean;
+  /** Features the current plan includes; anything else shows a padlock. */
+  planFeatures: readonly Feature[];
 }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
@@ -79,6 +83,9 @@ export function Sidebar({
                 {items.map((item) => {
                   const active = isActive(item.href);
                   const Icon = item.icon;
+                  const locked = Boolean(
+                    item.feature && !planFeatures.includes(item.feature),
+                  );
                   return (
                     <li key={item.href}>
                       {/*
@@ -92,7 +99,13 @@ export function Sidebar({
                         href={item.href}
                         onClick={onMobileClose}
                         aria-current={active ? "page" : undefined}
-                        title={collapsed ? `${item.label} — ${item.hint}` : item.hint}
+                        title={
+                          locked
+                            ? `${item.label} — not included in your plan`
+                            : collapsed
+                              ? `${item.label} — ${item.hint}`
+                              : item.hint
+                        }
                         className={cn(
                           "group relative flex items-center gap-2 rounded-md py-[7px] pl-2.5 pr-2 text-[12.5px] transition-colors",
                           active
@@ -124,10 +137,18 @@ export function Sidebar({
                               </Badge>
                             ) : null}
                             {/*
-                              A bare grey dot meant nothing to anyone who had
-                              not read the code. Say the word instead.
+                              A padlock rather than "Soon".
+                              The page exists; it is the plan that does not
+                              reach it, and those are different problems with
+                              different fixes. Clicking still works and lands
+                              on a page that explains which.
                             */}
-                            {item.status === "planned" ? (
+                            {locked ? (
+                              <Lock
+                                className="ml-auto h-3 w-3 shrink-0 text-[var(--nx-text-faint)]"
+                                aria-label="Not included in your plan"
+                              />
+                            ) : item.status === "planned" ? (
                               <span className="ml-auto shrink-0 rounded px-1 py-px text-[9.5px] font-medium uppercase tracking-wide text-[var(--nx-text-faint)]">
                                 Soon
                               </span>

@@ -19,6 +19,7 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
+import type { Feature } from "@/lib/plans";
 
 export type NavItem = {
   label: string;
@@ -29,6 +30,13 @@ export type NavItem = {
   badge?: string;
   /** Hidden from the sidebar for anyone below admin. */
   adminOnly?: boolean;
+  /**
+   * The entitlement this page needs, if any.
+   *
+   * Drives the padlock in the sidebar. Pages without one are always reachable
+   * — reading what you have already produced is never gated.
+   */
+  feature?: Feature;
   /**
    * One plain sentence, shown on hover.
    *
@@ -88,7 +96,8 @@ export const NAV_GROUPS: NavGroup[] = [
         label: "Saved Views",
         href: "/dashboards",
         icon: Gauge,
-        status: "planned",
+        status: "live",
+        feature: "saved_views",
         hint: "Pin the charts you check often onto one screen.",
       },
       {
@@ -97,6 +106,7 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/explore",
         icon: Compass,
         status: "live",
+        feature: "explore",
         hint: "Slice your data by any column without writing SQL.",
       },
       {
@@ -104,7 +114,8 @@ export const NAV_GROUPS: NavGroup[] = [
         label: "Customer Groups",
         href: "/cohorts",
         icon: Users,
-        status: "planned",
+        status: "live",
+        feature: "customer_groups",
         hint: "Compare groups of customers against each other over time.",
       },
     ],
@@ -178,7 +189,8 @@ export const NAV_GROUPS: NavGroup[] = [
         label: "Saved Formulas",
         href: "/models",
         icon: Boxes,
-        status: "planned",
+        status: "live",
+        feature: "saved_formulas",
         hint: "Reusable calculations you define once and use everywhere.",
       },
     ],
@@ -190,7 +202,8 @@ export const NAV_GROUPS: NavGroup[] = [
         label: "Alerts",
         href: "/alerts",
         icon: Bell,
-        status: "planned",
+        status: "live",
+        feature: "alerts",
         hint: "Get told when a number crosses a line you care about.",
       },
       {
@@ -198,7 +211,8 @@ export const NAV_GROUPS: NavGroup[] = [
         label: "Saved Numbers",
         href: "/metrics",
         icon: BarChart3,
-        status: "planned",
+        status: "live",
+        feature: "saved_numbers",
         hint: "Agree one definition of a number so everyone reports it the same.",
       },
       {

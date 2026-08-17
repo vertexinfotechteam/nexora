@@ -7,12 +7,14 @@ import { TopBar } from "./topbar";
 import type { Session } from "@/lib/store/types";
 import type { CreditBalance } from "@/lib/credits";
 import type { AppNotification } from "@/lib/notifications";
+import type { Feature } from "@/lib/plans";
 
 export function AppShell({
   session,
   credits,
   notifications,
   isPlatformStaff,
+  planFeatures,
   children,
 }: {
   session: Session;
@@ -20,6 +22,8 @@ export function AppShell({
   notifications: AppNotification[];
   /** Whether to show the Admin link. Mirrors the Admin page's own gate. */
   isPlatformStaff: boolean;
+  /** Features the current plan includes. */
+  planFeatures: readonly Feature[];
   children: React.ReactNode;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -31,6 +35,7 @@ export function AppShell({
         mobileOpen={mobileOpen}
         onMobileClose={() => setMobileOpen(false)}
         isAdmin={isPlatformStaff}
+        planFeatures={planFeatures}
       />
       <div className="flex min-h-screen flex-col transition-[padding] lg:pl-[204px]">
         <TopBar

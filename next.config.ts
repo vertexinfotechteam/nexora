@@ -50,6 +50,7 @@ const AUTHENTICATED_ROUTES = [
   "/reports",
   "/settings",
   "/studio",
+  "/upgrade",
 ];
 
 const noStoreHeaders = [
@@ -62,6 +63,15 @@ const noStoreHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  /*
+   * Next's development indicator defaults to bottom-left, which is exactly
+   * where the sidebar's Collapse control sits — the badge covered it and took
+   * the click. Moved to the opposite corner.
+   *
+   * It only ever renders in development; production builds never show it.
+   */
+  devIndicators: { position: "bottom-right" },
+
   /**
    * DuckDB and ExcelJS are native/CJS-heavy packages — they must stay external
    * to the server bundle or Turbopack will try to trace their .node binaries.
