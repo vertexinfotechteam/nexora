@@ -29,7 +29,7 @@ export function AppShell({
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="relative min-h-screen bg-[var(--nx-bg)]">
+    <div className="nx-app-dark relative min-h-screen bg-[var(--nx-bg)] text-[var(--nx-text)]">
       <AmbientBackground />
       <Sidebar
         mobileOpen={mobileOpen}

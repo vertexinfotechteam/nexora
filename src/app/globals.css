@@ -876,3 +876,147 @@ body {
   --nx-logo-bar: #0b2b23;
   --nx-logo-line: #0b2b23;
 }
+
+/* ===========================================================================
+   Dashboard palette
+   ---------------------------------------------------------------------------
+   Scoped to the signed-in application, not to :root. The marketing site stays
+   light; the product is dark. That is one decision per surface rather than a
+   theme the user has to pick, so there is still no toggle.
+
+   Applied as given, except for four values that did not survive a contrast
+   check. Each correction is the smallest step that clears 4.5:1, and each is
+   noted where it appears.
+   =========================================================================== */
+@utility nx-app-dark {
+  color-scheme: dark;
+
+  /* Surfaces — as supplied. */
+  --nx-bg: #07151b;          /* Deep Navy Charcoal */
+  --nx-surface: #10282d;     /* Charcoal Teal */
+  --nx-card: #142f34;        /* Dark Slate */
+  --nx-inset: #0d2228;
+  --nx-elevated: #1a3d42;    /* Medium Teal */
+  --nx-elevated-hover: #21484e;
+  --nx-hover: #1a3d42;
+
+  /* Borders — as supplied. Deliberately low contrast: these separate panels
+     of near-identical colour rather than identify a control, so they read as
+     a seam instead of an outline. */
+  --nx-border: #24464a;
+  --nx-border-subtle: #1b383d;
+  --nx-border-strong: #2f5a5f;
+
+  /* Text.
+     Muted was #71898D, which measured 3.81:1 on a card — under the 4.5 small
+     text needs, and it carries most labels in the product. Lifted to the
+     nearest value that clears it. */
+  --nx-text: #f5faf9;        /* White */
+  --nx-text-muted: #a9bcbf;  /* Soft Gray */
+  --nx-text-dim: #8aa3a7;
+  --nx-text-faint: #7e979b;  /* was #71898D — 3.81:1, now 4.57:1 */
+
+  /* Brand.
+     The fill stays Emerald Teal. Text and icons use Fresh Mint, because
+     #2B9485 as text on a card is 3.82:1 while #32A895 is 4.83:1. */
+  --nx-purple: #0f5b51;      /* Deep Teal — primary fill */
+  --nx-purple-hover: #146d61;
+  --nx-purple-active: #0b4840;
+  --nx-purple-on: #f5faf9;   /* 7.56:1 on the fill */
+  --nx-purple-soft: rgba(50, 168, 149, 0.14);
+  --nx-purple-fg: #32a895;
+
+  --nx-cyan: #2b9485;
+  --nx-cyan-soft: rgba(43, 148, 133, 0.14);
+  --nx-cyan-fg: #32a895;
+
+  --nx-accent: #32a895;      /* Fresh Mint */
+  --nx-accent-hover: #45b8a6;
+  --nx-accent-active: #2b9485;
+  /* Dark text on the mint fill: white on it is only 3.51:1, the near-black
+     ground is 6.33:1. */
+  --nx-accent-fg: #07151b;
+  --nx-accent-soft: rgba(50, 168, 149, 0.12);
+  --nx-accent-soft-strong: rgba(50, 168, 149, 0.2);
+  --nx-accent-fg-on-soft: #32a895;
+  --nx-accent-border: rgba(50, 168, 149, 0.4);
+  --nx-accent-border-strong: rgba(50, 168, 149, 0.6);
+
+  /* Status.
+     Danger was #D95C5C at 3.79:1 — an error message is the last thing that
+     should be hard to read, so the text tone is lifted while the fill keeps
+     the supplied colour. */
+  --nx-success: #32a895;     /* Emerald */
+  --nx-warning: #d6a84f;     /* Soft Gold — 6.44:1, as supplied */
+  --nx-error: #d95c5c;       /* Soft Red — used as a fill */
+
+  --nx-success-soft: rgba(50, 168, 149, 0.14);
+  --nx-success-fg: #4fc0ad;
+  --nx-warning-soft: rgba(214, 168, 79, 0.14);
+  --nx-warning-fg: #e0bb73;
+  --nx-error-soft: rgba(217, 92, 92, 0.14);
+  --nx-error-fg: #e07a7a;    /* was #D95C5C — 3.79:1, now 4.87:1 */
+  --nx-error-border: rgba(217, 92, 92, 0.42);
+  --nx-error-border-strong: rgba(217, 92, 92, 0.6);
+  --nx-success-border: rgba(50, 168, 149, 0.42);
+
+  /* Charts. Series 1 is the brand; the rest stay spread around the wheel,
+     because a chart drawn in six teals cannot be read. */
+  --nx-series-1: #32a895;
+  --nx-series-2: #6fb8e8;
+  --nx-series-3: #d6a84f;
+  --nx-series-4: #b39ae0;
+  --nx-series-5: #e08a8a;
+  --nx-series-6: #5fd0b4;
+  --nx-series-7: #e8b98a;
+  --nx-series-8: #9fb4b8;
+  --nx-heat-base: #142f34;
+  --nx-heat-rgb: 50, 168, 149;
+  --nx-heat-text-low: #a9bcbf;
+  --nx-heat-text-high: #07151b;
+
+  --nx-grid: #1e3f45;
+  --nx-axis: #7e979b;
+  --nx-cursor: rgba(255, 255, 255, 0.04);
+  --nx-scroll-thumb: #2f5a5f;
+  --nx-scroll-thumb-hover: #3e7178;
+  --nx-code: #5fd0b4;
+  --nx-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --nx-shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.55);
+
+  --nx-ambient-1: 169, 188, 191;
+  --nx-ambient-2: 50, 168, 149;
+  --nx-ambient-opacity: 0.85;
+  --nx-glass: rgba(20, 47, 52, 0.72);
+  --nx-glass-border: rgba(50, 168, 149, 0.16);
+
+  /* The mark's slate downstroke disappears on this ground. */
+  --nx-logo-dark: #e6efeb;
+  --nx-logo-green: #32a895;
+  --nx-logo-bar: #07151b;
+  --nx-logo-line: #07151b;
+
+  /* Sidebar — Dark Teal Navy, as supplied. */
+  --nx-rail: #09242a;
+  --nx-rail-deep: #07151b;
+  --nx-rail-border: #24464a;
+  --nx-rail-text: #f5faf9;
+  --nx-rail-muted: #a9bcbf;
+  --nx-rail-dim: #7e979b;
+  --nx-rail-hover: rgba(255, 255, 255, 0.06);
+  --nx-rail-active: #0f5b51;
+  --nx-rail-active-text: #f5faf9;
+}
+
+/**
+ * Paint the page behind the dashboard too.
+ *
+ * The shell covers the viewport, but the body underneath it keeps the light
+ * ground — which shows as a cream flash on overscroll and behind the scroll
+ * gutter. Matching it here avoids threading a class onto <body> from a nested
+ * layout, which Next does not allow.
+ */
+body:has(.nx-app-dark) {
+  background: #07151b;
+  color-scheme: dark;
+}
