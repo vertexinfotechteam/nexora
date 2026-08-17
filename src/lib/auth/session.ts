@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { isSupabaseConfigured } from "@/lib/env";
 import { getServerSupabase } from "@/lib/supabase/server";
@@ -18,8 +19,15 @@ export const LOCAL_SESSION_COOKIE = "nx_local_session";
  * Local mode: a signed-in-by-opt-in development identity, clearly labelled in
  * the UI. It exists so the analytics pipeline can be used before a Supabase
  * project is connected; it grants no access to anything beyond this machine.
+ *
+ * Wrapped in React's cache(), which de-duplicates calls within one request.
+ * This is called from 52 places — the layout, the page and several components
+ * can each ask during a single render, and every ask was its own network round
+ * trip for an answer that cannot change mid-request. The cache is per-request,
+ * never global: two requests share nothing, and the validation itself is
+ * unchanged, so a revoked or edited token is still caught on the next one.
  */
-export async function getSession(): Promise<Session | null> {
+export const getSession = cache(async function getSession(): Promise<Session | null> {
   if (!isSupabaseConfigured()) {
     const store = await cookies();
     if (!store.get(LOCAL_SESSION_COOKIE)) return null;
@@ -91,7 +99,7 @@ export async function getSession(): Promise<Session | null> {
     plan: org?.plan ?? "free",
     mode: "supabase",
   };
-}
+});
 
 /** Session guaranteed to have a workspace. Throws for callers that need one. */
 export async function requireSession(): Promise<Session> {

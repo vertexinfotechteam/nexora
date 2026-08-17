@@ -29,6 +29,22 @@ export type StaffMember = {
   fromBootstrap: boolean;
 };
 
+/*
+ * Remembers that `platform_staff` is not there yet.
+ *
+ * This function runs on every render of every signed-in page, to decide
+ * whether to show the Admin link. Until migration 0003 is applied the table
+ * does not exist, and PostgREST answers that with a round trip that measured
+ * 4.9 seconds — paid on every page load, for a question whose answer cannot
+ * change between two requests a second apart.
+ *
+ * A short time-to-live rather than a permanent flag, so that running the
+ * migration takes effect on its own within a minute instead of needing the
+ * server restarted.
+ */
+const MISSING_TABLE_TTL_MS = 60_000;
+let tableMissingUntil = 0;
+
 export async function getStaffMember(
   session: Session | null,
 ): Promise<StaffMember | null> {
@@ -36,7 +52,9 @@ export async function getStaffMember(
 
   const email = session.email.trim().toLowerCase();
 
-  if (isSupabaseConfigured() && hasServiceClient()) {
+  const tableKnownMissing = Date.now() < tableMissingUntil;
+
+  if (isSupabaseConfigured() && hasServiceClient() && !tableKnownMissing) {
     const { data, error } = await getServiceClient()
       .from("platform_staff")
       .select("user_id, email, role, is_active")
@@ -44,7 +62,17 @@ export async function getStaffMember(
       .maybeSingle();
 
     // A missing table means migration 0003 has not run. Fall through to the
-    // bootstrap list rather than locking the operator out of their own panel.
+    // bootstrap list rather than locking the operator out of their own panel,
+    // and stop asking for a minute.
+    if (
+      error &&
+      (error.code === "PGRST205" ||
+        error.code === "42P01" ||
+        /schema cache|does not exist/i.test(error.message))
+    ) {
+      tableMissingUntil = Date.now() + MISSING_TABLE_TTL_MS;
+    }
+
     if (!error && data) {
       if (!data.is_active) return null;
       if (!isPlatformRole(data.role)) return null;
