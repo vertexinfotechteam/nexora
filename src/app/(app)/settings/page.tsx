@@ -58,35 +58,14 @@ export default async function SettingsPage() {
           </CardBody>
         </Card>
 
-        {/* Workspace */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Workspace</CardTitle>
-            <Badge tone={session.mode === "supabase" ? "success" : "warning"}>
-              {session.mode === "supabase" ? "Supabase" : "Local mode"}
-            </Badge>
-          </CardHeader>
-          <CardBody className="space-y-2 p-4">
-            <Row label="Name" value={session.organizationName} />
-            <Row label="Plan" value={session.plan.toUpperCase()} />
-            <Row
-              label="Storage backend"
-              value={
-                session.mode === "supabase"
-                  ? "Supabase Storage (private bucket)"
-                  : "Local filesystem (./.nexora)"
-              }
-            />
-            <Row
-              label="Database"
-              value={
-                session.mode === "supabase"
-                  ? "Supabase Postgres with RLS"
-                  : "Local JSON store"
-              }
-            />
-          </CardBody>
-        </Card>
+        {/*
+          The Workspace card is gone.
+          It reported the storage backend and the database engine, which is
+          our plumbing rather than anything the account holder decides or acts
+          on, and it named a workspace the product no longer asks anyone to
+          think about. The plan is on the account menu and the credit meter,
+          where it is read in context.
+        */}
 
         {/* AI settings */}
         <Card>

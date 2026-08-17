@@ -96,7 +96,7 @@ export const NAV_GROUPS: NavGroup[] = [
         label: "Explore Data",
         href: "/explore",
         icon: Compass,
-        status: "planned",
+        status: "live",
         hint: "Slice your data by any column without writing SQL.",
       },
       {
