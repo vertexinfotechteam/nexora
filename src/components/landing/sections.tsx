@@ -21,6 +21,7 @@ import { LogoMark } from "@/components/brand/logo";
 import { Reveal } from "@/components/visual/reveal";
 import { LiveDemoChart, LiveDemoPoll } from "./live-demo";
 import { TEAM, COMPANY } from "@/lib/team";
+import { PLAN_LIST, formatPrice } from "@/lib/plans";
 
 /* -------------------------------------------------------------------------- */
 /* Hero                                                                       */
@@ -256,80 +257,32 @@ export function Product() {
 /* Pricing                                                                    */
 /* -------------------------------------------------------------------------- */
 
-const PLANS = [
-  {
-    name: "Free",
-    price: "$0",
-    cadence: "forever",
-    blurb: "Everything you need to judge whether this works for your data.",
-    credits: "10 AI analysis credits",
-    features: [
-      "Unlimited dataset uploads",
-      "Full statistical pipeline",
-      "Anomaly detection & forecasting",
-      "PDF and Excel export",
-      "Branded reports with your logo",
-      "24/7 assistant",
-    ],
-    cta: "Create account free",
-    href: "/signup",
-    highlight: false,
-  },
-  {
-    name: "Pro",
-    price: "$29",
-    cadence: "per user / month",
-    blurb: "For the person who owns the numbers and has to defend them.",
-    credits: "500 AI analysis credits / month",
-    features: [
-      "Everything in Free",
-      "Scheduled analyses",
-      "Saved dashboards",
-      "Priority processing",
-      "Larger file limits",
-      "Email support",
-    ],
-    cta: "Start with Pro",
-    href: "/signup?plan=pro",
-    highlight: true,
-  },
-  {
-    name: "Business",
-    price: "$99",
-    cadence: "per user / month",
-    blurb: "For teams who need shared answers and an audit trail.",
-    credits: "2,500 AI analysis credits / month",
-    features: [
-      "Everything in Pro",
-      "Shared workspaces & roles",
-      "Governance and audit log",
-      "SSO ready",
-      "Custom report branding",
-      "Onboarding session",
-    ],
-    cta: "Start with Business",
-    href: "/signup?plan=business",
-    highlight: false,
-  },
-  {
-    name: "Enterprise",
-    price: "Custom",
-    cadence: "talk to us",
-    blurb: "Deployed where your data already lives, on your terms.",
-    credits: "Unlimited analysis credits",
-    features: [
-      "Everything in Business",
-      "Private or on-premise deployment",
-      "Bring your own model keys",
-      "Security review & DPA",
-      "SLA and named contact",
-      "Custom integrations",
-    ],
-    cta: "Contact sales",
-    href: "mailto:hello@vertexinfotech.com?subject=Nexus%20AI%20Enterprise",
-    highlight: false,
-  },
-];
+/**
+ * Pricing cards, projected from the single plan definition.
+ *
+ * This section used to carry its own list — Free, Pro $29, Business $99,
+ * Enterprise "Custom" — which had drifted from what the product actually
+ * sells and from what /upgrade shows. Two lists describing the same plan
+ * disagree eventually, and the one a customer reads *before* paying is the one
+ * that has to be true. It now reads the plan definition, so a price can only
+ * be changed in one place.
+ */
+const PRICING_TIERS = PLAN_LIST.map((plan) => ({
+  name: plan.name,
+  price: formatPrice(plan),
+  cadence: plan.period,
+  blurb: plan.tagline,
+  credits:
+    plan.credits === null
+      ? "Unlimited AI analysis credits"
+      : `${plan.credits} AI analysis credits`,
+  features: plan.highlights,
+  cta: plan.id === "free" ? "Create account free" : `Choose ${plan.name}`,
+  // Free starts an account; the paid plans go to the plans page, where the
+  // "payment is not switched on yet" message lives.
+  href: plan.id === "free" ? "/signup" : `/upgrade?plan=${plan.id}`,
+  highlight: Boolean(plan.popular),
+}));
 
 export function Pricing() {
   return (
@@ -345,7 +298,7 @@ export function Pricing() {
         /></Reveal>
 
         <div className="mt-10 grid gap-4 lg:grid-cols-4">
-          {PLANS.map((plan) => (
+          {PRICING_TIERS.map((plan) => (
             <article
               key={plan.name}
               className={

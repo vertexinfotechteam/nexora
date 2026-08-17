@@ -28,7 +28,7 @@ export function CardHeader({
   return (
     <header
       className={cn(
-        "flex items-center justify-between gap-3 border-b border-[var(--nx-border)] px-4 py-2.5",
+        "flex items-center justify-between gap-3 border-b border-[var(--nx-border)] px-4 py-3",
         className,
       )}
       {...props}
@@ -40,7 +40,7 @@ export function CardTitle({ className, ...props }: React.ComponentProps<"h3">) {
   return (
     <h3
       className={cn(
-        "flex items-center gap-1.5 text-[13px] font-semibold text-[var(--nx-text)]",
+        "flex items-center gap-2 text-[13.5px] font-semibold tracking-tight text-[var(--nx-text)]",
         className,
       )}
       {...props}

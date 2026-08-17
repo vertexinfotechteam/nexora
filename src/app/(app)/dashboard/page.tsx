@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
+  Activity,
   AlertTriangle,
   Database,
+  Rows3,
+  ShieldCheck,
   FileText,
   Lightbulb,
   Sparkles,
@@ -85,21 +88,25 @@ export default async function DashboardPage() {
           label="Datasets ready"
           value={String(ready.length)}
           sub={`${datasets.length} uploaded in total`}
+          icon={Database}
         />
         <StatCard
           label="Rows available"
           value={formatNumber(totalRows)}
           sub="across all ready datasets"
+          icon={Rows3}
         />
         <StatCard
           label="Average data quality"
           value={avgQuality === null ? "—" : `${avgQuality.toFixed(1)}/100`}
           sub="measured, not estimated"
+          icon={ShieldCheck}
         />
         <StatCard
           label="Analyses run"
           value={String(jobs.length)}
           sub={jobs[0] ? `last ${relativeTime(jobs[0].created_at)}` : "none yet"}
+          icon={Activity}
         />
       </div>
 
@@ -390,23 +397,45 @@ function Header() {
   );
 }
 
+/**
+ * A headline count.
+ *
+ * Laid out to the reference: an icon tile, the label beside it, the figure
+ * large underneath.
+ *
+ * The reference also carries a percentage delta and a sparkline on each card.
+ * Neither appears here, and deliberately so — these four are counts of things
+ * that exist right now (files, rows, a quality score, analyses run), not a
+ * series measured over time. There is no previous period to compare against
+ * and no history to draw, so a trend line would be decoration in the shape of
+ * evidence. Charts on this page are drawn from real series instead.
+ */
 function StatCard({
   label,
   value,
   sub,
+  icon: Icon,
 }: {
   label: string;
   value: string;
   sub: string;
+  icon: React.ComponentType<{ className?: string }>;
 }) {
   return (
     <Card>
-      <CardBody className="p-3">
-        <p className="text-[11px] text-[var(--nx-text-muted)]">{label}</p>
-        <p className="mt-1 text-[20px] font-semibold leading-none tracking-tight">
+      <CardBody className="p-4">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-[var(--nx-accent-soft-strong)]">
+            <Icon className="h-[15px] w-[15px] text-[var(--nx-accent)]" />
+          </span>
+          <p className="text-[12.5px] font-medium text-[var(--nx-text-muted)]">
+            {label}
+          </p>
+        </div>
+        <p className="mt-3 text-[27px] font-semibold leading-none tracking-tight">
           {value}
         </p>
-        <p className="mt-1.5 text-[10.5px] text-[var(--nx-text-faint)]">{sub}</p>
+        <p className="mt-2 text-[11px] text-[var(--nx-text-faint)]">{sub}</p>
       </CardBody>
     </Card>
   );
