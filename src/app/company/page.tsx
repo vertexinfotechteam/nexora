@@ -37,14 +37,10 @@ export default function CompanyPage() {
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--nx-purple)] text-[13px] font-semibold text-[var(--nx-purple-on)]">
                   {member.initials}
                 </span>
-                <div className="min-w-0">
-                  <p className="truncate text-[13.5px] font-semibold text-[var(--nx-text)]">
-                    {member.name}
-                  </p>
-                  <p className="text-[12px] font-medium text-[var(--nx-purple)]">
-                    {member.role}
-                  </p>
-                </div>
+                {/* Names only, matching the landing page. */}
+                <p className="min-w-0 truncate text-[14px] font-semibold text-[var(--nx-text)]">
+                  {member.name}
+                </p>
               </div>
               <p className="mt-2.5 text-[12.5px] leading-relaxed">
                 {member.focus}

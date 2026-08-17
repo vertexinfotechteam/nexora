@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Bot, Loader2, MessageCircle, Send, X } from "lucide-react";
+import { Bot, Loader2, Send, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Message = { role: "user" | "assistant"; text: string };
@@ -100,15 +100,39 @@ export function AiAssistant() {
         aria-label={open ? "Close assistant" : "Open the Nexus assistant"}
         aria-expanded={open}
         className={cn(
-          "fixed bottom-4 right-4 z-[60] flex h-12 w-12 items-center justify-center rounded-full shadow-[var(--nx-shadow-lg)] transition-transform hover:scale-105",
-          "bg-gradient-to-br from-[var(--nx-purple)] to-[var(--nx-accent)] text-white",
+          "nx-orb group fixed bottom-4 right-4 z-[60] flex h-14 w-14 items-center justify-center rounded-full transition-transform duration-300 hover:scale-105",
+          "bg-[radial-gradient(circle_at_30%_25%,var(--nx-accent)_0%,var(--nx-purple)_55%,var(--nx-purple-active)_100%)]",
         )}
       >
         {open ? (
-          <X className="h-5 w-5" />
+          <X className="h-5 w-5 text-white" />
         ) : (
           <>
-            <MessageCircle className="h-5 w-5" />
+            {/*
+              A rising bar chart with a reading tracing over it, rather than a
+              speech bubble. The generic bubble said "chat widget" — the thing
+              every site has — when what sits behind it is an analyst. The
+              orbit ring and the travelling point are what make it read as
+              working rather than waiting.
+            */}
+            <span
+              aria-hidden
+              className="nx-orbit absolute inset-0 rounded-full border border-white/25"
+            />
+            <svg viewBox="0 0 24 24" className="relative h-6 w-6" fill="none">
+              <rect x="4" y="13" width="3.2" height="7" rx="1.2" fill="white" opacity="0.55" />
+              <rect x="10.4" y="9.5" width="3.2" height="10.5" rx="1.2" fill="white" opacity="0.78" />
+              <rect x="16.8" y="5.5" width="3.2" height="14.5" rx="1.2" fill="white" />
+              <path
+                d="M5.6 11.2 L12 8 L18.4 3.6"
+                stroke="white"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="nx-spark"
+              />
+              <circle cx="18.4" cy="3.6" r="1.9" fill="white" />
+            </svg>
             <span className="absolute -right-0.5 -top-0.5 flex h-3 w-3">
               <span className="absolute h-full w-full animate-ping rounded-full bg-[var(--nx-success)] opacity-75" />
               <span className="relative h-3 w-3 rounded-full border-2 border-[var(--nx-bg)] bg-[var(--nx-success)]" />

@@ -11,7 +11,6 @@ import {
   Lock,
   Play,
   ShieldCheck,
-  Sparkles,
   Timer,
   TrendingUp,
   Workflow,
@@ -29,7 +28,7 @@ import { TEAM, COMPANY } from "@/lib/team";
 
 export function Hero({ signedIn }: { signedIn: boolean }) {
   return (
-    <section className="relative overflow-hidden">
+    <section className="nx-datafield relative overflow-hidden">
       {/* Layered atmosphere: grid, two halos in the mark's colours, and a
           hairline that traces the section edge. */}
       <div aria-hidden className="nx-hero-grid absolute inset-0 -z-10" />
@@ -114,6 +113,18 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
               </li>
             ))}
           </ul>
+
+          {/*
+            Fills the band that opened under the copy once the columns were
+            top-aligned — the demo stack on the right is much taller, so the
+            left ran out of content halfway down.
+
+            It shows the four steps an analysis actually goes through, which is
+            the one thing the product does that a spreadsheet does not: you
+            watch it work. Ornament would have filled the same space and said
+            nothing.
+          */}
+          <PipelinePreview />
         </div>
 
         <div className="nx-rise nx-delay-3 space-y-3">
@@ -122,6 +133,51 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
         </div>
       </div>
     </section>
+  );
+}
+
+
+/**
+ * The four stages of an analysis, drawn as a track.
+ *
+ * Static markup with a CSS-driven sweep; nothing here fetches or computes, so
+ * it stays honest about being an illustration rather than a live readout.
+ */
+const PIPELINE = [
+  { label: "Read the file", detail: "columns, types, gaps" },
+  { label: "Compute", detail: "totals, trends, breakdowns" },
+  { label: "Check", detail: "every figure re-derived" },
+  { label: "Explain", detail: "PDF and Excel, ready to send" },
+];
+
+function PipelinePreview() {
+  return (
+    <div className="nx-rise nx-delay-5 mt-8 hidden lg:block" aria-hidden>
+      <p className="nx-label mb-3">What happens when you upload</p>
+
+      <ol className="relative flex items-stretch gap-2">
+        {/* The rail the pulse travels along. */}
+        <span className="absolute left-0 right-0 top-[13px] h-px bg-[var(--nx-border)]" />
+        <span className="nx-rail absolute left-0 top-[13px] h-px w-1/3" />
+
+        {PIPELINE.map((stage, index) => (
+          <li key={stage.label} className="relative flex-1">
+            <span
+              className="nx-node relative z-10 flex h-[26px] w-[26px] items-center justify-center rounded-full border border-[var(--nx-border)] bg-[var(--nx-card)] text-[10.5px] font-semibold text-[var(--nx-accent)] shadow-[var(--nx-shadow)]"
+              style={{ animationDelay: `${index * 0.6}s` }}
+            >
+              {index + 1}
+            </span>
+            <p className="mt-2 text-[11.5px] font-medium leading-tight">
+              {stage.label}
+            </p>
+            <p className="mt-0.5 text-[10.5px] leading-snug text-[var(--nx-text-faint)]">
+              {stage.detail}
+            </p>
+          </li>
+        ))}
+      </ol>
+    </div>
   );
 }
 
@@ -164,7 +220,7 @@ const FEATURES = [
 
 export function Product() {
   return (
-    <section id="product" className="border-t border-[var(--nx-border)] py-16 lg:py-20">
+    <section id="product" className="nx-datafield border-t border-[var(--nx-border)] py-16 lg:py-20">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <Reveal><SectionHeading
           eyebrow="Product"
@@ -279,7 +335,7 @@ export function Pricing() {
   return (
     <section
       id="pricing"
-      className="border-t border-[var(--nx-border)] bg-[var(--nx-surface)] py-16 lg:py-20"
+      className="nx-datafield border-t border-[var(--nx-border)] bg-[var(--nx-surface)] py-16 lg:py-20"
     >
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <Reveal><SectionHeading
@@ -398,7 +454,7 @@ const RESOURCES = [
 
 export function Resources() {
   return (
-    <section id="resources" className="border-t border-[var(--nx-border)] py-16 lg:py-20">
+    <section id="resources" className="nx-datafield border-t border-[var(--nx-border)] py-16 lg:py-20">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <Reveal><SectionHeading
           eyebrow="Resources"
@@ -457,7 +513,7 @@ export function Team() {
   return (
     <section
       id="team"
-      className="border-t border-[var(--nx-border)] bg-[var(--nx-surface)] py-16 lg:py-20"
+      className="nx-datafield border-t border-[var(--nx-border)] bg-[var(--nx-surface)] py-16 lg:py-20"
     >
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <Reveal><SectionHeading
@@ -476,14 +532,11 @@ export function Team() {
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--nx-purple)] to-[var(--nx-accent)] text-[14px] font-semibold text-white">
                   {member.initials}
                 </span>
-                <div className="min-w-0">
-                  <h3 className="truncate text-[13.5px] font-semibold">
-                    {member.name}
-                  </h3>
-                  <p className="text-[11.5px] font-medium text-[var(--nx-purple-fg)]">
-                    {member.role}
-                  </p>
-                </div>
+                {/* Names only. Titles invite a hierarchy read that says
+                    nothing about the product. */}
+                <h3 className="min-w-0 truncate text-[14px] font-semibold">
+                  {member.name}
+                </h3>
               </div>
               <p className="mt-3 text-[12px] leading-relaxed text-[var(--nx-text-muted)]">
                 {member.focus}

@@ -618,3 +618,228 @@ body {
   stroke-dasharray: var(--nx-draw-length, 400);
   animation: nx-draw 2.4s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+
+/* ===========================================================================
+   Landing motion — added in the design pass.
+
+   Everything below is decoration. Each block ends inside the reduced-motion
+   guard at the foot of this file, so a visitor who has asked their system for
+   less movement gets the same layout holding still.
+   =========================================================================== */
+
+/* --- Navbar --------------------------------------------------------------- */
+
+/* A hairline that drifts along the bottom edge, so the bar reads as live
+   rather than as a static strip. */
+@keyframes nx-scan {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@utility nx-scan {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in oklab, var(--nx-accent) 55%, transparent) 45%,
+    color-mix(in oklab, var(--nx-logo-green) 70%, transparent) 55%,
+    transparent 100%
+  );
+  animation: nx-scan 7s linear infinite;
+}
+
+/* Underline that opens from the centre rather than sliding in from a side,
+   which keeps the four links reading as one row. */
+@utility nx-navlink {
+  &::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: 4px;
+    height: 1.5px;
+    width: 0;
+    border-radius: 999px;
+    background: var(--nx-accent);
+    transform: translateX(-50%);
+    transition:
+      width 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 0.32s ease;
+    opacity: 0;
+  }
+
+  &:hover::after {
+    width: calc(100% - 1.5rem);
+    opacity: 1;
+  }
+}
+
+/* --- Assistant launcher --------------------------------------------------- */
+
+@keyframes nx-orbit {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* A ring with one bright arc, turning slowly. Reads as something working. */
+@utility nx-orbit {
+  border-top-color: rgba(255, 255, 255, 0.9);
+  animation: nx-orbit 4.5s linear infinite;
+}
+
+@utility nx-orb {
+  box-shadow:
+    0 10px 30px -8px color-mix(in oklab, var(--nx-purple) 65%, transparent),
+    0 0 0 1px color-mix(in oklab, var(--nx-accent) 30%, transparent);
+}
+
+/* The trend line draws itself across the mark, then rests. */
+@keyframes nx-spark {
+  0% {
+    stroke-dasharray: 0 40;
+  }
+  55%,
+  100% {
+    stroke-dasharray: 40 0;
+  }
+}
+
+@utility nx-spark {
+  animation: nx-spark 3.2s ease-in-out infinite;
+}
+
+/* --- Hero pipeline -------------------------------------------------------- */
+
+/* A pulse travelling the rail, left to right, on a loop. */
+@keyframes nx-rail {
+  0% {
+    transform: translateX(-40%);
+    opacity: 0;
+  }
+  12%,
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(320%);
+    opacity: 0;
+  }
+}
+
+@utility nx-rail {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--nx-accent),
+    transparent
+  );
+  animation: nx-rail 5.5s cubic-bezier(0.45, 0, 0.2, 1) infinite;
+}
+
+/* Each numbered node lifts as the pulse reaches it. */
+@keyframes nx-node {
+  0%,
+  70%,
+  100% {
+    border-color: var(--nx-border);
+    box-shadow: var(--nx-shadow);
+  }
+  12%,
+  30% {
+    border-color: var(--nx-accent);
+    box-shadow:
+      var(--nx-shadow),
+      0 0 0 4px color-mix(in oklab, var(--nx-accent) 14%, transparent);
+  }
+}
+
+@utility nx-node {
+  animation: nx-node 5.5s ease-in-out infinite;
+}
+
+@utility nx-delay-5 {
+  animation-delay: 0.3s;
+}
+
+/* --- Section background: data drifting behind the content ----------------- */
+
+@keyframes nx-drift {
+  from {
+    background-position:
+      0 0,
+      0 0;
+  }
+  to {
+    background-position:
+      140px -90px,
+      -110px 70px;
+  }
+}
+
+/**
+ * Two sparse dot fields at different scales, drifting in opposite directions.
+ *
+ * Dots rather than a grid: a moving grid produces obvious banding against text
+ * and is the first thing to look cheap. Kept under 5% opacity so a chart or a
+ * paragraph above it always wins.
+ */
+@utility nx-datafield {
+  position: relative;
+  isolation: isolate;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image:
+      radial-gradient(
+        circle at center,
+        color-mix(in oklab, var(--nx-logo-green) 42%, transparent) 0.9px,
+        transparent 1px
+      ),
+      radial-gradient(
+        circle at center,
+        color-mix(in oklab, var(--nx-purple) 30%, transparent) 0.7px,
+        transparent 1px
+      );
+    background-size:
+      54px 54px,
+      86px 86px;
+    opacity: 0.4;
+    animation: nx-drift 42s linear infinite;
+    mask-image: radial-gradient(ellipse 75% 65% at 50% 45%, #000 30%, transparent 100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nx-scan,
+  .nx-orbit,
+  .nx-spark,
+  .nx-rail,
+  .nx-node {
+    animation: none;
+  }
+
+  .nx-scan,
+  .nx-rail {
+    /* The travelling gradients exist only to move; without motion they are a
+       stray bright bar, so they are hidden rather than frozen mid-sweep. */
+    opacity: 0;
+  }
+
+  .nx-datafield::before {
+    animation: none;
+  }
+
+  .nx-navlink::after {
+    transition: none;
+  }
+}

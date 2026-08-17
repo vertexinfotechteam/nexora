@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Menu, Sparkles, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LogoMark } from "@/components/brand/logo";
 import { cn } from "@/lib/utils";
@@ -42,20 +42,36 @@ export function LandingNavbar({ signedIn }: { signedIn: boolean }) {
           : "border-b border-transparent bg-transparent",
       )}
     >
-      <nav className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4 sm:px-6">
-        <Link href="/" className="flex items-center gap-2">
-          <LogoMark className="h-7 w-7" />
-          <span className="text-[14.5px] font-semibold tracking-tight">
+      {/* Hairline that fills as the page scrolls — a quiet progress read. */}
+      <span
+        aria-hidden
+        className="nx-scan pointer-events-none absolute inset-x-0 bottom-0 h-px"
+      />
+
+      <nav className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4 sm:px-6">
+        <Link href="/" className="nx-brand group flex items-center gap-2.5">
+          <span className="relative flex items-center justify-center">
+            <LogoMark className="relative z-10 h-8 w-8 transition-transform duration-500 group-hover:rotate-[-6deg]" />
+            <span
+              aria-hidden
+              className="absolute inset-0 -z-0 rounded-full bg-[var(--nx-logo-green)] opacity-0 blur-md transition-opacity duration-500 group-hover:opacity-25"
+            />
+          </span>
+          {/* Larger and wider than before: at 14.5px the wordmark read as a
+              caption beside the mark rather than as the brand. */}
+          <span className="text-[19px] font-bold leading-none tracking-[-0.02em]">
             Nexus
           </span>
         </Link>
 
-        <ul className="ml-6 hidden items-center gap-1 md:flex">
+        <ul className="ml-7 hidden items-center gap-0.5 md:flex">
           {LINKS.map((link) => (
             <li key={link.href}>
+              {/* The underline grows from the centre on hover, so the row has
+                  a rhythm instead of four identical grey words. */}
               <a
                 href={link.href}
-                className="rounded-md px-2.5 py-1.5 text-[12.5px] text-[var(--nx-text-muted)] transition-colors hover:bg-[var(--nx-elevated)] hover:text-[var(--nx-text)]"
+                className="nx-navlink relative rounded-md px-3 py-2 text-[13px] font-medium text-[var(--nx-text-muted)] transition-colors hover:text-[var(--nx-text)]"
               >
                 {link.label}
               </a>
