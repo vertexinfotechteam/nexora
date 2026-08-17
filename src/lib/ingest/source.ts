@@ -1,6 +1,7 @@
 import "server-only";
 
 import { writeFile } from "node:fs/promises";
+import { extractTable } from "./header";
 import path from "node:path";
 import { UPLOAD_LIMITS } from "@/lib/env";
 import { quoteLiteral } from "@/lib/duckdb/engine";
@@ -113,31 +114,61 @@ async function convertXlsxToCsv(absolutePath: string): Promise<string> {
     throw new IngestError("The workbook has no worksheets.");
   }
 
-  const escape = (value: unknown): string => {
+  /** A cell's plain text. Formulas contribute their computed result. */
+  const cellText = (value: unknown): string => {
     if (value === null || value === undefined) return "";
-    let text: string;
-    if (value instanceof Date) text = value.toISOString();
-    else if (typeof value === "object") {
-      const cell = value as { text?: string; result?: unknown; richText?: { text: string }[] };
-      if (Array.isArray(cell.richText)) text = cell.richText.map((r) => r.text).join("");
-      else if (cell.text !== undefined) text = cell.text;
-      else if (cell.result !== undefined) text = String(cell.result);
-      else text = "";
-    } else text = String(value);
-
-    return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+    if (value instanceof Date) return value.toISOString();
+    if (typeof value === "object") {
+      const cell = value as {
+        text?: string;
+        result?: unknown;
+        richText?: { text: string }[];
+      };
+      if (Array.isArray(cell.richText)) return cell.richText.map((r) => r.text).join("");
+      if (cell.result !== undefined) return String(cell.result);
+      if (cell.text !== undefined) return cell.text;
+      return "";
+    }
+    return String(value);
   };
 
-  const lines: string[] = [];
+  const escapeCsv = (text: string): string =>
+    /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+
+  /*
+   * Read the cells first, then find the table inside the sheet.
+   *
+   * Writing every row straight out leaves DuckDB to treat line 1 as the
+   * header, and business workbooks almost never start with one — a company
+   * name, a "Financial Year 2025-26" subtitle and a blank line come first.
+   * The result was every column being named after the report title and every
+   * number arriving as text, which is indistinguishable downstream from a
+   * dataset with no measures in it: no KPIs, no charts, no forecast, and a
+   * report with nothing in it.
+   */
+  const rawRows: string[][] = [];
   sheet.eachRow({ includeEmpty: false }, (row) => {
     const values = row.values as unknown[];
     // ExcelJS row.values is 1-indexed with a leading hole.
-    lines.push(values.slice(1).map(escape).join(","));
+    rawRows.push(values.slice(1).map(cellText));
   });
 
-  if (lines.length === 0) {
+  if (rawRows.length === 0) {
     throw new IngestError("The first worksheet is empty.");
   }
+
+  const shape = extractTable(rawRows);
+
+  if (shape.rows.length === 0) {
+    throw new IngestError("The first worksheet is empty.");
+  }
+  if (shape.rows.length === 1) {
+    throw new IngestError(
+      "The worksheet has column headings but no rows of data underneath them.",
+    );
+  }
+
+  const lines = shape.rows.map((row) => row.map(escapeCsv).join(","));
 
   const csvPath = `${absolutePath}.converted.csv`;
   await writeFile(csvPath, lines.join("\n"), "utf8");
