@@ -122,6 +122,26 @@
   --nx-logo-bar: #ffffff;
   --nx-logo-line: #ffffff;
 
+  /*
+   * Sidebar — a dark rail against the light workspace.
+   *
+   * Its own tokens rather than the surface ones. The app is a light product
+   * with one deliberately dark edge, so the rail must not follow --nx-surface
+   * or it would turn cream along with everything else.
+   */
+  --nx-rail: #0b2b23;
+  --nx-rail-deep: #082019;
+  --nx-rail-border: rgba(255, 255, 255, 0.07);
+  --nx-rail-text: #e6efeb;
+  --nx-rail-muted: #8fa9a0;
+  /* Lightened from #6d8a80, which measured 4.04:1 on the rail — below the
+     4.5 small text needs. This carries the group labels. */
+  --nx-rail-dim: #86a49a;
+  --nx-rail-hover: rgba(255, 255, 255, 0.06);
+  /* Active row: a light pill, as in the reference. */
+  --nx-rail-active: #f4f7f5;
+  --nx-rail-active-text: #0a3b2f;
+
   --nx-radius: 0.625rem;
 }
 
@@ -842,4 +862,17 @@ body {
   .nx-navlink::after {
     transition: none;
   }
+}
+
+/**
+ * Brand mark on the dark rail.
+ *
+ * The mark's downstroke is slate (#2b3138), which is all but invisible against
+ * the rail. Scoped here rather than changed globally: the logo must keep its
+ * real colours everywhere else, including on printed reports.
+ */
+@utility nx-rail-scope {
+  --nx-logo-dark: #e6efeb;
+  --nx-logo-bar: #0b2b23;
+  --nx-logo-line: #0b2b23;
 }

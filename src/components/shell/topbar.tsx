@@ -55,7 +55,7 @@ export function TopBar({
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-[46px] shrink-0 items-center gap-2 border-b border-[var(--nx-border)] bg-[var(--nx-surface)] px-3">
+    <header className="sticky top-0 z-30 flex h-[52px] shrink-0 items-center gap-2 border-b border-[var(--nx-border)] bg-[var(--nx-card)] px-4">
       <button
         type="button"
         onClick={onMenuClick}
@@ -77,15 +77,15 @@ export function TopBar({
       {/* AI search */}
       <form onSubmit={submitSearch} className="mx-auto hidden w-full max-w-[420px] md:block">
         <div className="relative">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--nx-text-faint)]" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--nx-text-faint)]" />
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Ask AI or search metrics..."
             aria-label="Ask AI or search metrics"
-            className="h-7 w-full rounded-md border border-[var(--nx-border)] bg-[var(--nx-inset)] pl-8 pr-8 text-[12px] text-[var(--nx-text)] outline-none placeholder:text-[var(--nx-text-faint)] focus:border-[var(--nx-purple)]"
+            className="h-9 w-full rounded-full border border-[var(--nx-border)] bg-[var(--nx-inset)] pl-9 pr-9 text-[12.5px] text-[var(--nx-text)] outline-none transition-colors placeholder:text-[var(--nx-text-faint)] focus:border-[var(--nx-accent)] focus:bg-[var(--nx-card)]"
           />
-          <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-[var(--nx-text-faint)]">
+          <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-[var(--nx-text-faint)]">
             ⌘K
           </kbd>
         </div>
@@ -109,9 +109,9 @@ export function TopBar({
           <DropdownMenu.Trigger asChild>
             <button
               type="button"
-              className="ml-1 flex items-center gap-1.5 rounded-md px-1 py-1 hover:bg-[var(--nx-elevated)]"
+              className="ml-1.5 flex items-center gap-2 rounded-full px-1 py-1 pr-2 transition-colors hover:bg-[var(--nx-hover)]"
             >
-              <span className="flex h-6 w-6 items-center justify-center rounded bg-[var(--nx-purple)] text-[10px] font-semibold text-[var(--nx-purple-on)]">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--nx-purple)] text-[11px] font-semibold text-[var(--nx-purple-on)]">
                 {initials || "NX"}
               </span>
               <span className="hidden text-left text-[11.5px] leading-tight sm:block">
