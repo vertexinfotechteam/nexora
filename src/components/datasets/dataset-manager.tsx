@@ -27,7 +27,7 @@ import {
 import { cn, formatBytes, relativeTime } from "@/lib/utils";
 import type { Dataset } from "@/lib/store/types";
 
-const ACCEPT = ".csv,.tsv,.xlsx,.json,.parquet";
+const ACCEPT = ".csv,.tsv,.xlsx,.json,.parquet,.pdf";
 
 export function DatasetManager({ datasets }: { datasets: Dataset[] }) {
   const router = useRouter();

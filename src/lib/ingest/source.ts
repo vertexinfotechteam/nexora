@@ -14,7 +14,7 @@ import { quoteLiteral } from "@/lib/duckdb/engine";
  * so it is converted to CSV once at ingest time and the CSV becomes the source.
  */
 
-export type FileKind = "csv" | "tsv" | "json" | "parquet" | "xlsx";
+export type FileKind = "csv" | "tsv" | "json" | "parquet" | "xlsx" | "pdf";
 
 export class IngestError extends Error {
   constructor(
@@ -42,6 +42,8 @@ export function detectFileKind(fileName: string): FileKind {
       return "parquet";
     case "xlsx":
       return "xlsx";
+    case "pdf":
+      return "pdf";
     case "xls":
       throw new IngestError(
         "Legacy .xls files are not supported.",
@@ -78,6 +80,12 @@ export function checkFileSignature(buffer: Buffer, kind: FileKind): void {
   if (kind === "parquet") {
     if (head.subarray(0, 4).toString("latin1") !== "PAR1") {
       throw new IngestError("This file is not a valid Parquet file.");
+    }
+    return;
+  }
+  if (kind === "pdf") {
+    if (head.subarray(0, 4).toString("latin1") !== "%PDF") {
+      throw new IngestError("This file is not a valid PDF.");
     }
     return;
   }
@@ -176,6 +184,32 @@ async function convertXlsxToCsv(absolutePath: string): Promise<string> {
 }
 
 /**
+ * Reconstructs a table from a PDF and writes it as CSV.
+ *
+ * A PDF carries no table structure - the rows and columns a reader sees are an
+ * artefact of where each text run was placed on the page - so this is a
+ * reconstruction, not a read. It is offered because business data often only
+ * exists as a PDF report, and refusing the file helps nobody; but a
+ * spreadsheet of the same data will always be read more faithfully.
+ */
+async function convertPdfToCsv(absolutePath: string): Promise<string> {
+  const { readFile } = await import("node:fs/promises");
+  const { extractTableFromPdf, tableToCsv, PdfExtractError } = await import("./pdf");
+
+  try {
+    const table = await extractTableFromPdf(await readFile(absolutePath));
+    const csvPath = `${absolutePath}.converted.csv`;
+    await writeFile(csvPath, tableToCsv(table.rows), "utf8");
+    return csvPath;
+  } catch (error) {
+    if (error instanceof PdfExtractError) {
+      throw new IngestError(error.message, "A CSV or Excel export of the same data will read exactly.");
+    }
+    throw error;
+  }
+}
+
+/**
  * Builds the SQL source expression the engine uses to materialize the dataset.
  * The path is always a server-resolved absolute path — never AI-influenced.
  */
@@ -194,6 +228,10 @@ export async function buildSourceExpression(
       return `read_parquet(${quoteLiteral(absolutePath)})`;
     case "xlsx": {
       const csvPath = await convertXlsxToCsv(absolutePath);
+      return `read_csv(${quoteLiteral(csvPath)}, auto_detect=true, sample_size=-1, ignore_errors=true, null_padding=true)`;
+    }
+    case "pdf": {
+      const csvPath = await convertPdfToCsv(absolutePath);
       return `read_csv(${quoteLiteral(csvPath)}, auto_detect=true, sample_size=-1, ignore_errors=true, null_padding=true)`;
     }
   }

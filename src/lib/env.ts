@@ -158,5 +158,5 @@ export const SQL_LIMITS = {
 
 export const UPLOAD_LIMITS = {
   maxBytes: Number(read("NEXUS_MAX_UPLOAD_BYTES") ?? 100 * 1024 * 1024),
-  allowedExtensions: ["csv", "tsv", "xlsx", "xls", "json", "parquet"] as const,
+  allowedExtensions: ["csv", "tsv", "xlsx", "xls", "json", "parquet", "pdf"] as const,
 } as const;
