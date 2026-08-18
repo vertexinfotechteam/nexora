@@ -90,18 +90,33 @@ export async function saveContactMessage(
       // The table is missing until 0002 has been applied. Postgres calls that
       // 42P01; PostgREST answers from its own schema cache and calls it
       // PGRST205, so both mean the same thing to a caller here.
+      /*
+       * A visitor is told that we could not take their message, and how else
+       * to reach us. They are not told why.
+       *
+       * This used to answer "Run the 0002 migration in Supabase", which is an
+       * instruction for whoever runs the service, shown to a stranger trying
+       * to ask a question. It names our database technology and admits a
+       * misconfiguration to anyone who fills the form. The reason still needs
+       * to reach the operator, so it goes to the server log instead.
+       */
       if (
         error.code === "42P01" ||
         error.code === "PGRST205" ||
         /schema cache/i.test(error.message)
       ) {
-        return {
-          ok: false,
-          error:
-            "The contact table has not been created yet. Run the 0002 migration in Supabase.",
-        };
+        console.error(
+          "[contact] contact_messages is missing. Run supabase/migrations/0002_contact_messages.sql.",
+        );
+      } else {
+        console.error("[contact] could not store message:", error.message);
       }
-      return { ok: false, error: error.message };
+
+      return {
+        ok: false,
+        error:
+          "Sorry, we could not save your message just now. Please email us directly and we will reply.",
+      };
     }
     return { ok: true };
   }

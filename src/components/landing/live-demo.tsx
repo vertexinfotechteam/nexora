@@ -12,7 +12,6 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
@@ -65,9 +64,42 @@ function buildInitial(): Point[] {
   return points;
 }
 
+
+/**
+ * Width of an element, tracked with a ResizeObserver.
+ *
+ * Recharts' own ResponsiveContainer measured this card at zero and cached it:
+ * the chart drew its paths, then the surrounding <svg width="0"> clipped every
+ * one of them, so the card showed a blank panel while the KPI row above it
+ * displayed figures from the same data. Measuring here removes the dependency
+ * on its internals and gives the chart a width that is always real.
+ *
+ * Returns 0 until the first measurement, which is the signal to keep showing
+ * the placeholder rather than render a zero-width chart.
+ */
+function useContainerWidth<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
+  const [width, setWidth] = useState(0);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+
+    const measure = () => setWidth(element.getBoundingClientRect().width);
+    measure();
+
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  return [ref, width] as const;
+}
+
 export function LiveDemoChart() {
   const [points, setPoints] = useState<Point[]>([]);
   const tick = useRef(0);
+  const [chartRef, chartWidth] = useContainerWidth<HTMLDivElement>();
 
   // Build the series on the client only, so server and client markup agree.
   useEffect(() => {
@@ -152,12 +184,16 @@ export function LiveDemoChart() {
       </div>
 
       {/* Chart */}
-      <div className="px-1 pt-3">
-        {points.length === 0 ? (
+      <div ref={chartRef} className="w-full px-1 pt-3">
+        {points.length === 0 || chartWidth === 0 ? (
           <div className="h-[190px] animate-pulse" />
         ) : (
-          <ResponsiveContainer width="100%" height={190}>
-            <AreaChart data={points} margin={{ top: 4, right: 14, bottom: 0, left: 4 }}>
+          <AreaChart
+            width={chartWidth}
+            height={190}
+            data={points}
+            margin={{ top: 4, right: 14, bottom: 0, left: 4 }}
+          >
               <defs>
                 <linearGradient id="nx-hero-fill" x1="0" y1="0" x2="0" y2="1">
                   <stop
@@ -207,8 +243,7 @@ export function LiveDemoChart() {
                 fill="url(#nx-hero-fill)"
                 isAnimationActive={false}
               />
-            </AreaChart>
-          </ResponsiveContainer>
+          </AreaChart>
         )}
       </div>
 
