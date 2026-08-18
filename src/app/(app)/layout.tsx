@@ -6,7 +6,7 @@ import { AppShell } from "@/components/shell/app-shell";
 import { getCreditBalance } from "@/lib/credits";
 import { listNotifications } from "@/lib/notifications";
 import { getStaffMember } from "@/lib/admin/staff";
-import { PLANS, planForTier } from "@/lib/plans";
+import { FEATURES, PLANS, planForTier } from "@/lib/plans";
 
 export default async function AppLayout({
   children,
@@ -62,13 +62,25 @@ export default async function AppLayout({
        */
       isPlatformStaff={Boolean(staff)}
       /*
-       * Only "free" exists as a real subscription today — no payment provider
-       * is connected, so nothing can move an account off it. Mapping through
-       * planForTier keeps the gate honest now and correct the moment paid
-       * subscriptions become real, rather than hard-coding "free" here and
-       * having to remember this line later.
+       * Staff see every feature, whatever plan their own account is on.
+       *
+       * They are here to run the product and answer questions about it, and
+       * neither is possible through a padlock — being unable to open the
+       * screen a customer is asking about makes support guesswork.
+       *
+       * For everyone else this maps the stored tier to a plan. Only "free"
+       * exists as a real subscription today, since no payment provider is
+       * connected, but mapping through planForTier keeps this correct the
+       * moment paid subscriptions become real rather than hard-coding "free"
+       * and having to remember this line later.
+       *
+       * This unlocks the navigation, not the data: every page still resolves
+       * its own tenant through the session, so staff opening Saved Views see
+       * their own workspace, not a customer's.
        */
-      planFeatures={PLANS[planForTier(session.plan)].features}
+      planFeatures={
+        staff ? FEATURES : PLANS[planForTier(session.plan)].features
+      }
     >
       {children}
     </AppShell>
