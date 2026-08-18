@@ -62,9 +62,14 @@ export function validateUpload(fileName: string, sizeBytes: number): FileKind {
     throw new IngestError("The uploaded file is empty.");
   }
   if (sizeBytes > UPLOAD_LIMITS.maxBytes) {
+    // One decimal place: the hosted ceiling is 4.5 MB, and rounding it to
+    // "4 MB" would send someone away to trim a file that already fits.
+    const limitMb = (UPLOAD_LIMITS.maxBytes / 1024 / 1024).toFixed(1).replace(/\.0$/, "");
+    const fileMb = (sizeBytes / 1024 / 1024).toFixed(1);
+
     throw new IngestError(
-      `The file is larger than the ${Math.round(UPLOAD_LIMITS.maxBytes / 1024 / 1024)} MB upload limit.`,
-      "Split the file, or filter it down before uploading.",
+      `This file is ${fileMb} MB, and the limit is ${limitMb} MB.`,
+      "Filter it down, split it, or remove columns you do not need for this analysis.",
     );
   }
   return detectFileKind(fileName);
