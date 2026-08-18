@@ -110,7 +110,23 @@ export type LimitName = keyof typeof LIMITS;
  */
 export function check(name: LimitName, identifier: string): RateLimitResult {
   const { limit, windowMs } = LIMITS[name];
-  return hit(`${name}:${identifier}`, limit, windowMs);
+  const result = hit(`${name}:${identifier}`, limit, windowMs);
+
+  // Logged once per window, on the request that first goes over — not on
+  // every request after, which would just turn the flood itself into a
+  // second flood in the logs. One line per breach is enough to alert on or
+  // graph; the count is already in `audit_logs` via api.error for anything
+  // downstream that also errors.
+  if (!result.allowed && result.remaining === 0 && result.retryAfter > 0) {
+    const bucket = buckets.get(`${name}:${identifier}`);
+    if (bucket && bucket.count === limit + 1) {
+      console.warn(
+        `[rate-limit] ${name} exceeded by ${identifier} — limit ${limit} per ${windowMs}ms`,
+      );
+    }
+  }
+
+  return result;
 }
 
 /**
