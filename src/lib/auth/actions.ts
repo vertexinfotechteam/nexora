@@ -568,6 +568,8 @@ export async function oauthSignInAction(
     },
   });
 
+  const label = provider === "google" ? "Google" : "GitHub";
+
   if (error || !data?.url) {
     await audit({
       organization_id: null,
@@ -577,8 +579,49 @@ export async function oauthSignInAction(
       ...(await requestContext()),
     });
     return {
-      error: `${provider === "google" ? "Google" : "GitHub"} sign-in is not enabled on this project yet. Enable it under Authentication → Providers in Supabase.`,
+      error: `${label} sign-in is not enabled on this project yet. Enable it under Authentication → Providers in Supabase.`,
     };
+  }
+
+  /*
+   * Ask Supabase whether the provider is actually switched on, before sending
+   * the browser there.
+   *
+   * signInWithOAuth() builds the authorize URL locally and returns no error,
+   * so the check above cannot catch a provider that has not been configured.
+   * The failure only appears after the redirect, as a raw JSON page reading
+   * `{"error_code":"validation_failed","msg":"Unsupported provider: provider
+   * is not enabled"}` — a dead end with no way back, and nothing telling the
+   * operator what to switch on.
+   *
+   * One extra request, only on the OAuth path, turns that into a sentence on
+   * the form the user is already looking at. A network failure here is not
+   * treated as a misconfigured provider: if the preflight cannot complete, the
+   * redirect goes ahead as before rather than blocking a working sign-in.
+   */
+  try {
+    const preflight = await fetch(data.url, { redirect: "manual" });
+
+    if (preflight.status >= 400) {
+      const body = await preflight.text().catch(() => "");
+      const notEnabled = /provider is not enabled|Unsupported provider/i.test(body);
+
+      await audit({
+        organization_id: null,
+        user_id: null,
+        action: "auth.oauth_failed",
+        metadata: { provider, reason: notEnabled ? "provider_disabled" : `http_${preflight.status}` },
+        ...(await requestContext()),
+      });
+
+      return {
+        error: notEnabled
+          ? `${label} sign-in is not switched on for this project yet. Enable it under Authentication → Providers in your Supabase dashboard, then try again.`
+          : `${label} sign-in could not be started. Please try again, or use your email and password.`,
+      };
+    }
+  } catch {
+    // Could not reach Supabase to check. Fall through and let the browser try.
   }
 
   redirect(data.url);
