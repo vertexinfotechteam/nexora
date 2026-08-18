@@ -465,7 +465,7 @@ function AnalysisResults({ payload }: { payload: AnalysisPayload }) {
             <div className="flex items-start gap-2 rounded border border-[var(--nx-accent-border)] bg-[var(--nx-accent-soft)] px-2.5 py-2 text-[11.5px] leading-relaxed text-[var(--nx-warning-fg)]">
               <ShieldAlert className="mt-px h-3.5 w-3.5 shrink-0" />
               <span>
-                The AI's original wording contained{" "}
+                The AI&apos;s original wording contained{" "}
                 {payload.unverifiedClaims.length} figure
                 {payload.unverifiedClaims.length === 1 ? "" : "s"} (
                 {payload.unverifiedClaims.join(", ")}) that did not match any
