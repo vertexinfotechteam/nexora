@@ -1,6 +1,42 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
-import { hardenAuthCookie } from "@/lib/auth/cookies";
+
+/*
+ * The cookie policy is inlined here rather than imported.
+ *
+ * Next's proxy documentation is explicit: "Proxy is meant to be invoked
+ * separately of your render code and in optimized cases deployed to your CDN
+ * ... you should not attempt relying on shared modules or globals." A shared
+ * import builds fine and then fails at request time in a deployed
+ * environment, which takes down every page at once while API routes — which
+ * the matcher excludes — carry on working.
+ *
+ * It duplicates hardenAuthCookie() in lib/auth/cookies.ts, which is not
+ * something to do lightly with a security rule. The two are kept honest by
+ * the tests in tests/cookies.test.ts covering the shared copy, and by this
+ * note on both sides. If one changes, change the other.
+ */
+type ProxyCookieOptions = {
+  path?: string;
+  domain?: string;
+  maxAge?: number;
+  expires?: Date;
+  httpOnly?: boolean;
+  secure?: boolean;
+  // Supabase types this as string | boolean; we always emit "lax".
+  sameSite?: boolean | "lax" | "strict" | "none";
+};
+
+function hardenAuthCookie(options: ProxyCookieOptions = {}): ProxyCookieOptions {
+  const { maxAge: _maxAge, expires: _expires, ...rest } = options;
+  return {
+    ...rest,
+    path: options.path ?? "/",
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+  };
+}
 
 /**
  * Runs before every page request (Next.js 16 renamed `middleware` to `proxy`).
@@ -70,7 +106,7 @@ function buildCsp(nonce: string): string {
     .trim();
 }
 
-export async function proxy(request: NextRequest) {
+async function handle(request: NextRequest) {
   const nonce = crypto.randomUUID().replace(/-/g, "");
   const csp = buildCsp(nonce);
 
@@ -240,3 +276,35 @@ export const config = {
     "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };
+
+/**
+ * The entry point, wrapped so a fault here cannot take down the whole site.
+ *
+ * This runs before every page. When it threw, every page returned a bare
+ * "Internal Server Error" while API routes — excluded by the matcher — kept
+ * working, which is a confusing shape to debug and a total outage to a user.
+ *
+ * The recovery is deliberately asymmetric. A protected path still redirects
+ * to sign-in, because failing open there would serve an app shell to someone
+ * who was never authenticated. A public path is allowed through without the
+ * extra headers, since a landing page with a missing CSP is a smaller problem
+ * than a site that does not load at all.
+ */
+export async function proxy(request: NextRequest) {
+  try {
+    return await handle(request);
+  } catch (error) {
+    const { pathname } = request.nextUrl;
+    console.error("[proxy] failed for", pathname, error);
+
+    if (!isPublic(pathname)) {
+      const redirect = request.nextUrl.clone();
+      redirect.pathname = "/login";
+      redirect.search = "";
+      redirect.searchParams.set("next", pathname);
+      return NextResponse.redirect(redirect);
+    }
+
+    return NextResponse.next();
+  }
+}
