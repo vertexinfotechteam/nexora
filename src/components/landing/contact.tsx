@@ -20,7 +20,19 @@ export function Contact() {
   const [state, formAction] = useActionState(submitContactAction, initialState);
 
   return (
-    <section id="contact" className="nx-datafield relative scroll-mt-16 py-20">
+    <section
+      id="contact"
+      /*
+       * overflow-hidden, as the hero has.
+       *
+       * The halo below is a fixed 620px wide, centred with a -50% translate.
+       * On a 375px phone it reaches 123px past each edge, and without clipping
+       * that became real page width - the whole site scrolled sideways by
+       * exactly that much. It is decoration, so it should be cut off rather
+       * than counted.
+       */
+      className="nx-datafield relative scroll-mt-16 overflow-hidden py-20"
+    >
       <div
         aria-hidden
         className="nx-halo absolute left-1/2 top-1/4 -z-10 h-[360px] w-[620px] -translate-x-1/2 rounded-full blur-[150px]"

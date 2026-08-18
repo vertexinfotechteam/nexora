@@ -186,11 +186,11 @@ export function LiveDemoChart() {
       {/* Chart */}
       <div ref={chartRef} className="w-full px-1 pt-3">
         {points.length === 0 || chartWidth === 0 ? (
-          <div className="h-[190px] animate-pulse" />
+          <div className="h-[150px] animate-pulse" />
         ) : (
           <AreaChart
             width={chartWidth}
-            height={190}
+            height={150}
             data={points}
             margin={{ top: 4, right: 14, bottom: 0, left: 4 }}
           >

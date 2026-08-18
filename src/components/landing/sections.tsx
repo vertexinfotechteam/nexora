@@ -128,7 +128,16 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
           <PipelinePreview />
         </div>
 
-        <div className="nx-rise nx-delay-3 space-y-3">
+        {/*
+          min-w-0 matters here.
+
+          A grid item defaults to min-width:auto, so it cannot shrink below its
+          own content. The chart measures its container and renders at that
+          width, which then becomes content the column must fit — so any
+          overshoot is locked in rather than corrected, and the card grows past
+          its track instead of following it.
+        */}
+        <div className="nx-rise nx-delay-3 min-w-0 space-y-3">
           <LiveDemoChart />
           <LiveDemoPoll />
         </div>
