@@ -74,12 +74,19 @@ const nextConfig: NextConfig = {
   /**
    * DuckDB and ExcelJS are native/CJS-heavy packages — they must stay external
    * to the server bundle or Turbopack will try to trace their .node binaries.
+   *
+   * pdfjs-dist is here for a different reason: it loads its worker and its
+   * standard font metrics by resolving paths relative to its own file. Bundled,
+   * those paths point into .next/ where neither file exists, and every PDF
+   * upload fails with "Setting up fake worker failed". Left external, it is
+   * required straight out of node_modules and resolves its own assets.
    */
   serverExternalPackages: [
     "@duckdb/node-api",
     "@duckdb/node-bindings",
     "exceljs",
     "@react-pdf/renderer",
+    "pdfjs-dist",
   ],
 
   async headers() {

@@ -15,6 +15,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { getBrowserSupabase } from "@/lib/supabase/browser";
 import { Button } from "@/components/ui/button";
 import {
   Badge,
@@ -29,6 +30,23 @@ import type { Dataset } from "@/lib/store/types";
 
 const ACCEPT = ".csv,.tsv,.xlsx,.json,.parquet,.pdf";
 
+/**
+ * Turns a storage rejection into something the person can act on.
+ *
+ * Storage enforces a per-file ceiling of its own, set for the whole project
+ * rather than by this app, and when a file exceeds it the message that comes
+ * back names no number and no place to change it. Someone uploading a 60 MB
+ * export would be told only that their file "exceeded the maximum allowed
+ * size" — true, but it reads as though the file were at fault, and the app
+ * had already accepted that size a moment earlier.
+ */
+function storageMessage(message: string, sizeBytes: number): string {
+  if (/exceed|too large|maximum allowed size|413/i.test(message)) {
+    return `${formatBytes(sizeBytes)} is over the file size limit set on the storage project, which is lower than this app allows. Raising it (Supabase → Storage → Settings) lets files this large through; until then, a smaller file or a split export will work.`;
+  }
+  return `Upload failed: ${message}`;
+}
+
 export function DatasetManager({ datasets }: { datasets: Dataset[] }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -42,17 +60,61 @@ export function DatasetManager({ datasets }: { datasets: Dataset[] }) {
     setProgress(`Uploading ${file.name}…`);
 
     try {
-      const body = new FormData();
-      body.append("file", file);
+      /*
+       * Three steps, so the file never passes through our own server.
+       *
+       * Posting it to a route meant every byte travelled through the
+       * serverless function, which caps the whole product at whatever request
+       * body the host accepts — 4.5 MB on Vercel, unchangeable on any plan.
+       * The browser now asks for a one-time URL, sends the file straight to
+       * storage, and only then asks the server to read it back and profile it.
+       * The two calls to our own API carry a few hundred bytes each.
+       */
+      setProgress(`Preparing ${file.name}…`);
+      const ticketResponse = await fetch("/api/datasets/upload-url", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ fileName: file.name, sizeBytes: file.size }),
+      });
+      const ticket = await ticketResponse.json();
+      if (!ticketResponse.ok) {
+        throw new Error(
+          [ticket.error, ticket.hint].filter(Boolean).join(" ") || "The upload failed.",
+        );
+      }
+
+      setProgress(
+        `Uploading ${file.name} (${formatBytes(file.size)})${
+          file.size > 8 * 1024 * 1024 ? " — large files take a moment" : ""
+        }…`,
+      );
+      const storage = getBrowserSupabase();
+      if (!storage) throw new Error("Storage is not available in this browser session.");
+
+      const sent = await storage.storage
+        .from(ticket.bucket)
+        .uploadToSignedUrl(ticket.storagePath, ticket.token, file);
+
+      if (sent.error) throw new Error(storageMessage(sent.error.message, file.size));
 
       setProgress("Validating and profiling — this runs the real pipeline…");
-      const response = await fetch("/api/datasets/upload", {
+      const response = await fetch("/api/datasets/ingest", {
         method: "POST",
-        body,
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          datasetId: ticket.datasetId,
+          storagePath: ticket.storagePath,
+          fileName: ticket.fileName,
+          sizeBytes: file.size,
+        }),
       });
       const data = await response.json();
 
-      if (!response.ok) throw new Error(data.error ?? "The upload failed.");
+      if (!response.ok) {
+        throw new Error(
+          [data.error, data.hint].filter(Boolean).join(" ") || "The upload failed.",
+        );
+      }
 
       toast.success(
         `${data.dataset.name} is ready — ${data.quality.rowCount.toLocaleString()} rows, quality ${data.quality.score}/100`,

@@ -157,23 +157,18 @@ export const SQL_LIMITS = {
 } as const;
 
 /*
- * The largest request body a serverless function on Vercel will accept.
+ * Files no longer travel through our own server.
  *
- * This is a platform limit, not ours, and it cannot be raised on any plan. A
- * bigger file never reaches the route at all — the platform rejects it first,
- * and the user sees an opaque failure with no explanation. Capping ourselves
- * to the same number means they get a sentence that names the real limit
- * instead.
+ * They used to be POSTed to a route, which capped the product at whatever
+ * request body the host accepts — 4.5 MB on Vercel, unchangeable on any plan.
+ * The browser now uploads straight to storage with a one-time signed URL, so
+ * that limit no longer applies and this ceiling is ours to choose.
+ *
+ * What a large file still costs is time: the ingest route reads it back,
+ * loads it into the engine and profiles every column, and a serverless
+ * function has a wall-clock limit of its own.
  */
-const VERCEL_BODY_LIMIT_BYTES = 4.5 * 1024 * 1024;
-
-function uploadCeiling(): number {
-  const configured = Number(read("NEXUS_MAX_UPLOAD_BYTES") ?? 100 * 1024 * 1024);
-  // VERCEL is set by the platform on every deployment.
-  return process.env.VERCEL ? Math.min(configured, VERCEL_BODY_LIMIT_BYTES) : configured;
-}
-
 export const UPLOAD_LIMITS = {
-  maxBytes: uploadCeiling(),
+  maxBytes: Number(read("NEXUS_MAX_UPLOAD_BYTES") ?? 100 * 1024 * 1024),
   allowedExtensions: ["csv", "tsv", "xlsx", "xls", "json", "parquet", "pdf"] as const,
 } as const;
