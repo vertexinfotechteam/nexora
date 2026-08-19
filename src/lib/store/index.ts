@@ -16,6 +16,10 @@ import type {
   AnalysisJob,
   AnalysisResult,
   AuditEntry,
+  Dashboard,
+  DashboardWidget,
+  WidgetConfig,
+  WidgetType,
   Dataset,
   DatasetColumn,
   DatasetFile,
@@ -768,4 +772,193 @@ export async function readAuditLog(limit = 100) {
     .order("created_at", { ascending: false })
     .limit(limit);
   return data ?? [];
+}
+
+// ---------------------------------------------------------------------------
+// Saved views
+//
+// A view holds tiles, and a tile holds a question rather than an answer: the
+// dataset, the grouping and the summary to compute. Opening a view recomputes
+// every tile from the file, so a saved screen cannot drift into showing a
+// figure that was true when it was pinned and is not true now.
+// ---------------------------------------------------------------------------
+
+export async function listDashboards(session: Session): Promise<Dashboard[]> {
+  if (storeMode() === "local") {
+    const rows = await findLocal<Dashboard>(
+      "dashboards",
+      (d) => d.organization_id === session.organizationId,
+    );
+    return rows.sort((a, b) => b.updated_at.localeCompare(a.updated_at));
+  }
+  const client = await supabaseOrThrow();
+  const { data, error } = await client
+    .from("dashboards")
+    .select("*")
+    .order("updated_at", { ascending: false });
+  if (error) throw new Error(`Could not list saved views: ${error.message}`);
+  return (data ?? []) as Dashboard[];
+}
+
+export async function getDashboard(
+  session: Session,
+  id: string,
+): Promise<Dashboard | null> {
+  if (storeMode() === "local") {
+    const rows = await findLocal<Dashboard>(
+      "dashboards",
+      (d) => d.id === id && d.organization_id === session.organizationId,
+    );
+    return rows[0] ?? null;
+  }
+  const client = await supabaseOrThrow();
+  const { data, error } = await client
+    .from("dashboards")
+    .select("*")
+    .eq("id", id)
+    // Scoped by organization as well as id: the row-level policy already does
+    // this, but a query that only names an id would leak across tenants the
+    // moment it ran with the service client.
+    .eq("organization_id", session.organizationId)
+    .maybeSingle();
+  if (error) throw new Error(`Could not load that view: ${error.message}`);
+  return (data as Dashboard) ?? null;
+}
+
+export async function createDashboard(
+  session: Session,
+  input: { name: string; description?: string | null },
+): Promise<Dashboard> {
+  const row: Dashboard = {
+    id: newId(),
+    organization_id: session.organizationId,
+    created_by: session.userId,
+    name: input.name,
+    description: input.description ?? null,
+    filters: {},
+    is_shared: false,
+    created_at: nowIso(),
+    updated_at: nowIso(),
+  };
+
+  if (storeMode() === "local") return insertLocal("dashboards", row);
+
+  const client = await supabaseOrThrow();
+  const { data, error } = await client.from("dashboards").insert(row).select().single();
+  if (error) throw new Error(`Could not create the view: ${error.message}`);
+  return data as Dashboard;
+}
+
+export async function renameDashboard(
+  session: Session,
+  id: string,
+  name: string,
+): Promise<void> {
+  if (storeMode() === "local") {
+    await updateLocal<Dashboard>("dashboards", id, { name, updated_at: nowIso() });
+    return;
+  }
+  const client = await supabaseOrThrow();
+  const { error } = await client
+    .from("dashboards")
+    .update({ name, updated_at: nowIso() })
+    .eq("id", id)
+    .eq("organization_id", session.organizationId);
+  if (error) throw new Error(`Could not rename the view: ${error.message}`);
+}
+
+export async function deleteDashboard(session: Session, id: string): Promise<void> {
+  if (storeMode() === "local") {
+    await deleteLocal(
+      "dashboards",
+      (d) => d.id === id && d.organization_id === session.organizationId,
+    );
+    return;
+  }
+  const client = await supabaseOrThrow();
+  // Tiles go with it by cascade; deleting them here as well would be a second
+  // round trip that the database already guarantees.
+  const { error } = await client
+    .from("dashboards")
+    .delete()
+    .eq("id", id)
+    .eq("organization_id", session.organizationId);
+  if (error) throw new Error(`Could not delete the view: ${error.message}`);
+}
+
+export async function listWidgets(
+  session: Session,
+  dashboardId: string,
+): Promise<DashboardWidget[]> {
+  if (storeMode() === "local") {
+    const rows = await findLocal<DashboardWidget>(
+      "dashboard_widgets",
+      (w) =>
+        w.dashboard_id === dashboardId &&
+        w.organization_id === session.organizationId,
+    );
+    return rows.sort((a, b) => a.created_at.localeCompare(b.created_at));
+  }
+  const client = await supabaseOrThrow();
+  const { data, error } = await client
+    .from("dashboard_widgets")
+    .select("*")
+    .eq("dashboard_id", dashboardId)
+    .eq("organization_id", session.organizationId)
+    .order("created_at", { ascending: true });
+  if (error) throw new Error(`Could not load the tiles: ${error.message}`);
+  return (data ?? []) as DashboardWidget[];
+}
+
+export async function createWidget(
+  session: Session,
+  input: {
+    dashboard_id: string;
+    widget_type: WidgetType;
+    title: string | null;
+    config: WidgetConfig;
+  },
+): Promise<DashboardWidget> {
+  const row: DashboardWidget = {
+    id: newId(),
+    dashboard_id: input.dashboard_id,
+    organization_id: session.organizationId,
+    widget_type: input.widget_type,
+    title: input.title,
+    config: input.config,
+    layout_x: 0,
+    layout_y: 0,
+    layout_w: 4,
+    layout_h: 4,
+    created_at: nowIso(),
+    updated_at: nowIso(),
+  };
+
+  if (storeMode() === "local") return insertLocal("dashboard_widgets", row);
+
+  const client = await supabaseOrThrow();
+  const { data, error } = await client
+    .from("dashboard_widgets")
+    .insert(row)
+    .select()
+    .single();
+  if (error) throw new Error(`Could not add the tile: ${error.message}`);
+  return data as DashboardWidget;
+}
+
+export async function deleteWidget(session: Session, id: string): Promise<void> {
+  if (storeMode() === "local") {
+    await deleteLocal(
+      "dashboard_widgets",
+      (w) => w.id === id && w.organization_id === session.organizationId,
+    );
+    return;
+  }
+  const client = await supabaseOrThrow();
+  const { error } = await client
+    .from("dashboard_widgets")
+    .delete()
+    .eq("id", id)
+    .eq("organization_id", session.organizationId);
+  if (error) throw new Error(`Could not remove the tile: ${error.message}`);
 }

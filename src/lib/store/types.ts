@@ -325,3 +325,55 @@ export type AuditEntry = {
   user_agent?: string;
   metadata?: Record<string, unknown>;
 };
+
+/**
+ * A saved view: a named screen holding tiles the user pinned.
+ *
+ * The tables behind these have existed since the first migration; nothing new
+ * is needed to store one.
+ */
+export type Dashboard = {
+  id: string;
+  organization_id: string;
+  created_by: string;
+  name: string;
+  description: string | null;
+  filters: Record<string, unknown>;
+  is_shared: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+/** Chart shapes a tile may take. Matches the column's check constraint. */
+export type WidgetType = "kpi" | "line" | "bar" | "donut" | "table";
+
+/**
+ * What a tile needs to recompute itself.
+ *
+ * Deliberately a saved *question*, not a saved answer: the numbers are worked
+ * out from the file each time the view is opened, so a tile can never show a
+ * figure that was true last month and is not true now.
+ */
+export type WidgetConfig = {
+  datasetId: string;
+  groupBy: string;
+  measure: string | null;
+  aggregation: string;
+  sort: "value_desc" | "value_asc" | "label_asc";
+  limit: number;
+};
+
+export type DashboardWidget = {
+  id: string;
+  dashboard_id: string;
+  organization_id: string;
+  widget_type: WidgetType;
+  title: string | null;
+  config: WidgetConfig;
+  layout_x: number;
+  layout_y: number;
+  layout_w: number;
+  layout_h: number;
+  created_at: string;
+  updated_at: string;
+};
