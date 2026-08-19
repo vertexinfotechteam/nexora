@@ -78,7 +78,20 @@ export const PLANS: Record<PlanId, Plan> = {
      * customer nothing. What it does not include is the work that only pays
      * off when you come back: saving, comparing and being told about changes.
      */
-    features: ["analysis", "explore", "export_pdf", "export_excel"],
+    features: [
+      "analysis",
+      "explore",
+      "export_pdf",
+      "export_excel",
+      // Opened up on request: these were locked, and a padlock on a screen a
+      // free account can reach teaches people to ignore padlocks. Saved
+      // formulas and customer groups stay paid — they are the two the product
+      // sells on.
+      "saved_views",
+      "saved_numbers",
+      "alerts",
+      "share_links",
+    ],
     highlights: [
       "10 AI analysis credits",
       "Unlimited file uploads",

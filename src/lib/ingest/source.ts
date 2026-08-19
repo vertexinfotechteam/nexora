@@ -4,7 +4,7 @@ import { writeFile } from "node:fs/promises";
 import { extractTable } from "./header";
 import path from "node:path";
 import { UPLOAD_LIMITS } from "@/lib/env";
-import { quoteLiteral } from "@/lib/duckdb/engine";
+import { quoteLiteral } from "@/lib/duckdb/constants";
 
 /**
  * Turns an uploaded file into something DuckDB can read.

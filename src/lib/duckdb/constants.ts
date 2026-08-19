@@ -13,3 +13,13 @@
 
 /** The single table every uploaded dataset is loaded into. */
 export const DATASET_TABLE = "dataset";
+
+/** Quotes an identifier (a column or table name) for generated SQL. */
+export function quoteIdent(name: string): string {
+  return `"${name.replace(/"/g, '""')}"`;
+}
+
+/** Quotes a string literal for safe interpolation into generated SQL. */
+export function quoteLiteral(value: string): string {
+  return `'${value.replace(/'/g, "''")}'`;
+}

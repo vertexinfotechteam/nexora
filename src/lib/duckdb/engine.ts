@@ -1,7 +1,7 @@
 import "server-only";
 
 import { DuckDBInstance, type DuckDBConnection } from "@duckdb/node-api";
-import { DATASET_TABLE } from "./constants";
+import { DATASET_TABLE, quoteIdent, quoteLiteral } from "./constants";
 import { SQL_LIMITS } from "@/lib/env";
 
 /**
@@ -38,7 +38,7 @@ export class QueryError extends Error {
 // Defined in ./constants so modules needing only the name do not load
 // this file, and with it the native binding. Re-exported here because every
 // existing caller imports it from the engine.
-export { DATASET_TABLE } from "./constants";
+export { DATASET_TABLE, quoteIdent, quoteLiteral } from "./constants";
 
 type Engine = {
   instance: DuckDBInstance;
@@ -217,11 +217,4 @@ export async function runQuery(
 }
 
 /** Quotes an identifier for safe interpolation into generated SQL. */
-export function quoteIdent(name: string): string {
-  return `"${name.replace(/"/g, '""')}"`;
-}
 
-/** Quotes a string literal for safe interpolation into generated SQL. */
-export function quoteLiteral(value: string): string {
-  return `'${value.replace(/'/g, "''")}'`;
-}

@@ -89,6 +89,27 @@ const nextConfig: NextConfig = {
     "pdfjs-dist",
   ],
 
+  /*
+   * Ship DuckDB's native library with the routes that load it.
+   *
+   * The package is external (above), so it is required from node_modules at
+   * runtime rather than bundled. Tracing follows `require` calls it can see,
+   * and the binding resolves its .node/.so by building a path at runtime —
+   * invisible to static analysis. The files were therefore left out of the
+   * deployed function, and every upload and every analysis failed in
+   * production with "libduckdb.so: cannot open shared object file", while
+   * working perfectly on a developer machine where node_modules is simply
+   * there.
+   *
+   * Scoped to the routes that genuinely need it: the library is tens of
+   * megabytes, and a serverless function has a size limit worth respecting.
+   */
+  outputFileTracingIncludes: {
+    "/api/analysis/**": ["./node_modules/@duckdb/**/*"],
+    "/api/datasets/**": ["./node_modules/@duckdb/**/*"],
+    "/explore": ["./node_modules/@duckdb/**/*"],
+  },
+
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },

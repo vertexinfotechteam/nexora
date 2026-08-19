@@ -45,17 +45,17 @@ test("free includes the whole core loop, so the trial proves something", () => {
   }
 });
 
-test("free excludes the features that only pay off on a return visit", () => {
-  for (const feature of [
-    "saved_views",
-    "customer_groups",
-    "saved_formulas",
-    "saved_numbers",
-    "alerts",
-    "branding",
-    "share_links",
-  ] as const) {
+test("free withholds only the two features the paid plans are sold on", () => {
+  // The line moved deliberately: free now carries the saving and alerting
+  // features, and the paid plans are distinguished by these two.
+  for (const feature of ["customer_groups", "saved_formulas"] as const) {
     assert.equal(planIncludes("free", feature), false, feature);
+  }
+});
+
+test("free carries the features that were opened up", () => {
+  for (const feature of ["saved_views", "saved_numbers", "alerts", "share_links"] as const) {
+    assert.equal(planIncludes("free", feature), true, feature);
   }
 });
 
@@ -96,7 +96,7 @@ test("running out of credits does not take back what was already produced", () =
 });
 
 test("a feature outside the plan says so, rather than blaming credits", () => {
-  const decision = canUseFeature("free", "alerts", 10);
+  const decision = canUseFeature("free", "saved_formulas", 10);
   assert.equal(decision.allowed, false);
   assert.equal(decision.allowed === false && decision.reason, "not_in_plan");
 });

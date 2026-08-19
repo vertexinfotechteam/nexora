@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
-import { NotBuiltYet } from "@/components/shell/not-built-yet";
+import { PremiumFeature } from "@/components/shell/premium-feature";
 
-export const metadata: Metadata = { title: "Models" };
+export const metadata: Metadata = { title: "Saved Formulas" };
 
-export default function Page() {
+export default function ModelsPage() {
   return (
-    <NotBuiltYet
-      title="Models"
-      description="Define reusable semantic models over your raw sources."
-      plannedFor="Phase 4 — Analytics"
+    <PremiumFeature
+      title="Saved Formulas"
+      description="Reusable calculations you define once and apply to any file."
+      summary="Saved Formulas let you name a calculation — margin, growth, cost per unit — and reuse it across every file you upload, so the same number is worked out the same way every time."
     />
   );
 }

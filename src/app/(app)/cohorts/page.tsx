@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
-import { NotBuiltYet } from "@/components/shell/not-built-yet";
+import { PremiumFeature } from "@/components/shell/premium-feature";
 
-export const metadata: Metadata = { title: "Cohorts" };
+export const metadata: Metadata = { title: "Customer Groups" };
 
-export default function Page() {
+export default function CohortsPage() {
   return (
-    <NotBuiltYet
-      title="Cohorts"
-      description="Group users or accounts and compare their behaviour over time."
-      plannedFor="Phase 4 — Analytics"
+    <PremiumFeature
+      title="Customer Groups"
+      description="Group customers or accounts and compare them over time."
+      summary="Customer Groups let you split your customers into groups you define and watch how each group behaves month after month, so you can see which ones grow and which quietly leave."
     />
   );
 }
