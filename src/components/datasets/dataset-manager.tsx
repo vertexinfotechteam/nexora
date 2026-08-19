@@ -47,6 +47,53 @@ function storageMessage(message: string, sizeBytes: number): string {
   return `Upload failed: ${message}`;
 }
 
+/**
+ * Reads a JSON reply without assuming there is one.
+ *
+ * Every failure here used to surface as "Failed to execute 'json' on
+ * 'Response': Unexpected end of JSON input" — browser jargon shown to someone
+ * who only tried to upload a spreadsheet, and which says nothing about what
+ * went wrong or whether trying again would help. A route that dies before it
+ * can reply sends an empty body, and a gateway that gives up sends HTML, and
+ * neither is JSON.
+ *
+ * The status is the useful part in those cases, so it is what gets reported.
+ */
+type UploadReply = {
+  error?: string;
+  hint?: string;
+  datasetId?: string;
+  storagePath?: string;
+  fileName?: string;
+  bucket?: string;
+  token?: string;
+  dataset?: { name: string };
+  quality?: { rowCount: number; score: number };
+};
+
+async function readJson(response: Response): Promise<UploadReply> {
+  const body = await response.text();
+
+  if (body.trim().length > 0) {
+    try {
+      return JSON.parse(body) as UploadReply;
+    } catch {
+      // Fall through: a body that is not JSON is a failure to describe, not
+      // to parse.
+    }
+  }
+
+  if (response.ok) {
+    throw new Error("The server replied with nothing. Please try again.");
+  }
+
+  throw new Error(
+    response.status >= 500
+      ? `The server could not complete this upload (error ${response.status}). This is our end, not your file — please try again, and tell us if it keeps happening.`
+      : `The upload was refused (error ${response.status}).`,
+  );
+}
+
 export function DatasetManager({ datasets }: { datasets: Dataset[] }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -76,7 +123,7 @@ export function DatasetManager({ datasets }: { datasets: Dataset[] }) {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ fileName: file.name, sizeBytes: file.size }),
       });
-      const ticket = await ticketResponse.json();
+      const ticket = await readJson(ticketResponse);
       if (!ticketResponse.ok) {
         throw new Error(
           [ticket.error, ticket.hint].filter(Boolean).join(" ") || "The upload failed.",
@@ -90,6 +137,10 @@ export function DatasetManager({ datasets }: { datasets: Dataset[] }) {
       );
       const storage = getBrowserSupabase();
       if (!storage) throw new Error("Storage is not available in this browser session.");
+
+      if (!ticket.bucket || !ticket.storagePath || !ticket.token) {
+        throw new Error("The upload could not be prepared. Please try again.");
+      }
 
       const sent = await storage.storage
         .from(ticket.bucket)
@@ -108,12 +159,16 @@ export function DatasetManager({ datasets }: { datasets: Dataset[] }) {
           sizeBytes: file.size,
         }),
       });
-      const data = await response.json();
+      const data = await readJson(response);
 
       if (!response.ok) {
         throw new Error(
           [data.error, data.hint].filter(Boolean).join(" ") || "The upload failed.",
         );
+      }
+
+      if (!data.dataset || !data.quality) {
+        throw new Error("The file was stored but the server did not report the result.");
       }
 
       toast.success(
