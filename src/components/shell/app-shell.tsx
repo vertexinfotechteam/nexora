@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { AmbientBackground } from "@/components/visual/ambient-background";
 import { Sidebar } from "./sidebar";
 import { TopBar } from "./topbar";
 import type { Session } from "@/lib/store/types";
@@ -30,7 +29,6 @@ export function AppShell({
 
   return (
     <div className="relative min-h-screen bg-[var(--nx-bg)] text-[var(--nx-text)]">
-      <AmbientBackground />
       <Sidebar
         mobileOpen={mobileOpen}
         onMobileClose={() => setMobileOpen(false)}
