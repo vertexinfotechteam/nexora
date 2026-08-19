@@ -658,6 +658,50 @@ export async function getReport(
   return (data as Report) ?? null;
 }
 
+/**
+ * How many rows exist, independent of how many were fetched to show.
+ *
+ * The dashboard lists the five most recent analyses and reports, and used the
+ * length of those lists as the totals beside them. Both counters therefore
+ * stopped at five: an account with fifty reports read "5", and the number
+ * never moved again no matter how much work was done.
+ *
+ * Counting is a separate question from listing, so it gets its own query —
+ * `head: true` fetches no rows at all, only the count, so this costs a great
+ * deal less than raising the limit would.
+ */
+async function countRows(
+  session: Session,
+  table: "reports" | "analysis_jobs",
+): Promise<number> {
+  if (storeMode() === "local") {
+    const rows = await findLocal<{ organization_id: string }>(
+      table,
+      (r) => r.organization_id === session.organizationId,
+    );
+    return rows.length;
+  }
+  const client = await supabaseOrThrow();
+  const { count, error } = await client
+    .from(table)
+    .select("id", { count: "exact", head: true })
+    .eq("organization_id", session.organizationId);
+  // A count that cannot be read is reported as unknown by the caller rather
+  // than as zero, which would read as "you have none".
+  if (error) throw new Error(`Could not count ${table}: ${error.message}`);
+  return count ?? 0;
+}
+
+/** Total analyses this workspace has run. */
+export async function countJobs(session: Session): Promise<number> {
+  return countRows(session, "analysis_jobs");
+}
+
+/** Total reports this workspace has generated. */
+export async function countReports(session: Session): Promise<number> {
+  return countRows(session, "reports");
+}
+
 export async function listReports(
   session: Session,
   limit = 50,

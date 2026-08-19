@@ -14,6 +14,8 @@ import {
 import { requireSession } from "@/lib/auth/session";
 import { accuracyLabel } from "@/lib/analysis/forecast";
 import {
+  countJobs,
+  countReports,
   listAnomalies,
   listDatasets,
   listForecasts,
@@ -40,14 +42,30 @@ export const dynamic = "force-dynamic";
 export default async function DashboardPage() {
   const session = await requireSession();
 
-  const [datasets, anomalies, forecasts, recommendations, reports, jobs] =
-    await Promise.all([
+  /*
+   * The lists here are capped at what the page actually shows. The two totals
+   * beside them are counted separately, because using a list's length as its
+   * total made both counters stop at five however much work an account had
+   * done.
+   */
+  const [
+    datasets,
+    anomalies,
+    forecasts,
+    recommendations,
+    reports,
+    jobs,
+    jobCount,
+    reportCount,
+  ] = await Promise.all([
       listDatasets(session),
       listAnomalies(session, 8),
       listForecasts(session, 1),
       listRecommendations(session, 4),
       listReports(session, 5),
       listJobs(session, 5),
+      countJobs(session),
+      countReports(session),
     ]);
 
   const ready = datasets.filter((d) => d.status === "ready");
@@ -113,14 +131,14 @@ export default async function DashboardPage() {
         />
         <StatCard
           label="Analyses run"
-          value={String(jobs.length)}
+          value={String(jobCount)}
           sub={jobs[0] ? `last ${relativeTime(jobs[0].created_at)}` : "none yet"}
           icon={Activity}
         />
         <StatCard
           label="Reports ready"
-          value={String(reports.length)}
-          sub={reports.length > 0 ? "PDF and Excel available" : "none generated yet"}
+          value={String(reportCount)}
+          sub={reportCount > 0 ? "PDF and Excel available" : "none generated yet"}
           icon={FileText}
         />
       </div>
