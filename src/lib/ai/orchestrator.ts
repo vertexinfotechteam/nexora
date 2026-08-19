@@ -1,7 +1,7 @@
 import "server-only";
 
 import { randomUUID } from "node:crypto";
-import { hasAiProvider, completeWithFallback, type AiMessage } from "./provider";
+import { hasAiProvider, completeWithFallback, AiError, type AiMessage } from "./provider";
 import {
   ANALYST_SYSTEM_PROMPT,
   NARRATIVE_SYSTEM_PROMPT,
@@ -234,7 +234,7 @@ export async function runAnalysis(
     }));
   } catch (error) {
     autoStep.status = "error";
-    autoStep.detail = error instanceof Error ? error.message : String(error);
+    autoStep.detail = safeStepDetail(error, "automatic analysis");
   }
   onStep(autoStep);
 
@@ -373,7 +373,7 @@ Answer it using the tools. Compute every figure you cite.`,
       emit({
         stage: "planning",
         label: "The AI planner could not complete",
-        detail: error instanceof Error ? error.message : String(error),
+        detail: safeStepDetail(error, "planner"),
         status: "error",
       });
     }
@@ -433,6 +433,41 @@ Answer it using the tools. Compute every figure you cite.`,
     steps,
     unverifiedClaims,
   };
+}
+
+/**
+ * Turns a failure into a line that belongs in front of a customer.
+ *
+ * The step detail written here is shown in the live activity stream and
+ * printed into the method trail of the downloadable PDF. A provider's raw
+ * error body was going straight into both — so a customer's report carried
+ * the vendor's JSON, our quota position, the tier we are on and the support
+ * URLs to go with it. None of that is theirs to receive, and none of it tells
+ * them anything they can act on.
+ *
+ * The full text still reaches the server log, where the person who can act on
+ * it will look.
+ */
+export function safeStepDetail(error: unknown, context: string): string {
+  console.error(`[analysis] ${context}:`, error);
+
+  if (error instanceof AiError) {
+    if (error.status === 429) {
+      return "The AI service is busy right now and refused further requests. The figures below were still computed by the engine.";
+    }
+    if (error.status === 401 || error.status === 403) {
+      return "The AI service refused our credentials, so the written summary was skipped.";
+    }
+    if (error.status && error.status >= 500) {
+      return "The AI service was unavailable, so the written summary was skipped.";
+    }
+    if (/timed out/i.test(error.message)) {
+      return "The AI service did not respond in time, so the written summary was skipped.";
+    }
+    return "The AI service could not complete this step. The figures below were still computed by the engine.";
+  }
+
+  return "This step could not be completed. Nothing was estimated to cover the gap.";
 }
 
 /**
