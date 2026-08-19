@@ -9,6 +9,7 @@ import {
   Text,
   View,
   Circle,
+  Font,
   Line as SvgLine,
   renderToBuffer,
 } from "@react-pdf/renderer";
@@ -17,6 +18,55 @@ import { accuracyLabel } from "@/lib/analysis/forecast";
 import { formatNumber } from "@/lib/utils";
 import type { ReportPayload } from "@/lib/store/types";
 import type { Branding } from "@/lib/branding";
+
+/*
+ * Words are never broken across lines.
+ *
+ * The renderer hyphenates by default, which turned "analysis" into "analy-sis"
+ * and "table" into "ta-ble" in the middle of a sentence. In a document whose
+ * whole claim is that the figures are exact, text that looks mis-typed costs
+ * more than the ragged right edge it was avoiding.
+ */
+Font.registerHyphenationCallback((word) => [word]);
+
+/**
+ * Renders the model's markdown emphasis as actual emphasis.
+ *
+ * The narrative comes back with **bold** around every figure, and it was
+ * printed straight into the page — so a reader saw "**total revenue** reached
+ * **2,155,000**" with the asterisks intact. The markup was doing the opposite
+ * of its job: meant to make the numbers stand out, it made the report look
+ * unfinished.
+ *
+ * Splitting on the delimiter rather than reaching for a markdown library
+ * because this is the only construct the narrative uses, and a library would
+ * bring a parser, a renderer and a font stack for one pair of asterisks.
+ */
+function RichText({
+  text,
+  style,
+}: {
+  text: string;
+  style?: typeof styles.paragraph;
+}) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g).filter(Boolean);
+
+  return (
+    <Text style={style}>
+      {parts.map((part, index) =>
+        part.startsWith("**") && part.endsWith("**") && part.length > 4 ? (
+          <Text key={index} style={{ fontFamily: "Helvetica-Bold" }}>
+            {part.slice(2, -2)}
+          </Text>
+        ) : (
+          <Text key={index}>{part}</Text>
+        ),
+      )}
+    </Text>
+  );
+}
+
+
 
 /**
  * PDF report generation.
@@ -438,17 +488,17 @@ function ReportDocument({
         </Text>
 
         <Text style={styles.sectionTitle}>Executive summary</Text>
-        <Text style={styles.paragraph}>{payload.executiveSummary}</Text>
+        <RichText text={payload.executiveSummary} style={styles.paragraph} />
 
         {payload.insights.map((insight, index) => (
           <View key={index}>
             <Text style={[styles.paragraph, { fontFamily: "Helvetica-Bold" }]}>
-              {insight.title}
+              {insight.title.replace(/\*\*/g, "")}
             </Text>
             {/* Without an AI provider the summary and the answer are the same
                 deterministic text; printing it twice reads as padding. */}
             {insight.body.trim() === payload.executiveSummary.trim() ? null : (
-              <Text style={styles.paragraph}>{insight.body}</Text>
+              <RichText text={insight.body} style={styles.paragraph} />
             )}
             {insight.evidence.length > 0 ? (
               <View style={{ flexDirection: "row", flexWrap: "wrap", marginBottom: 4 }}>

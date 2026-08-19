@@ -453,7 +453,16 @@ export async function writeExecutiveSummary(
   const fallback = () => {
     const name = sanitizeUntrusted(datasetName, 80);
     if (figures.length === 0) {
-      return `This report covers "${name}". The analysis ran but produced no summary figures; see the sections below for what was computed.`;
+      /*
+       * "No headline measure", not "no figures".
+       *
+       * This branch is reached when no KPI was singled out, which is not the
+       * same as the analysis finding nothing — the report it opens routinely
+       * goes on to state several computed figures, a chart and a full method
+       * trail. Saying the analysis "produced no summary figures" above a page
+       * of them made the document contradict itself on its own first screen.
+       */
+      return `This report covers "${name}" and answers: "${sanitizeUntrusted(question, 200).replace(/\?+$/, "")}". No single headline measure was singled out for this question, so the finding is stated in full below, along with the charts, the checks and the method behind it. Every figure in this report was computed by the analytics engine directly from the dataset.`;
     }
     const headline = figures
       .slice(0, 4)
