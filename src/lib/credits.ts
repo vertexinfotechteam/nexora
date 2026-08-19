@@ -149,3 +149,27 @@ export async function consumeCredit(
 export function creditsBackend(): "supabase" | "local" {
   return getSupabaseConfig() ? "supabase" : "local";
 }
+
+/**
+ * Whether the account may still create things.
+ *
+ * The rule this expresses: an allowance that has run out stops new work, and
+ * nothing else. Everything already produced stays readable and downloadable —
+ * reports, exports, saved views, uploaded files — because those were paid for
+ * when they were made, and taking them back at zero would be charging twice.
+ *
+ * So this gates writes only. It is deliberately not called on any read path.
+ */
+export async function canCreate(
+  session: Session,
+): Promise<{ allowed: true } | { allowed: false; message: string }> {
+  const balance = await getCreditBalance(session);
+
+  if (balance.remaining > 0) return { allowed: true };
+
+  return {
+    allowed: false,
+    message:
+      "Your credits for this period are used up, so nothing new can be created. Everything you have already made stays available to read and download.",
+  };
+}

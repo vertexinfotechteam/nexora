@@ -145,7 +145,17 @@ export function AiAssistant() {
       {open ? (
         <section
           aria-label="Nexus assistant"
-          className="nx-enter fixed bottom-20 right-4 z-[60] flex h-[min(520px,calc(100vh-7rem))] w-[min(380px,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-[var(--nx-border)] bg-[var(--nx-card)] shadow-[var(--nx-shadow-lg)]"
+          /*
+           * Anchored to both edges rather than sized from 100vw.
+           *
+           * calc(100vw - 2rem) is only as good as vw is, and on a phone vw
+           * counts the scrollbar and does not shrink when the visual viewport
+           * does — so a panel sized that way can sit wider than the screen it
+           * is on and hang off the right edge. Pinning left and right and
+           * capping the width leaves the browser to do the arithmetic against
+           * the viewport it actually has.
+           */
+          className="nx-enter fixed bottom-20 left-4 right-4 z-[60] ml-auto flex h-[min(520px,calc(100vh-7rem))] max-w-[380px] flex-col overflow-hidden rounded-xl border border-[var(--nx-border)] bg-[var(--nx-card)] shadow-[var(--nx-shadow-lg)]"
         >
           <header className="flex items-center gap-2.5 border-b border-[var(--nx-border)] bg-[var(--nx-surface)] px-3 py-2.5">
             <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[var(--nx-purple)] to-[var(--nx-accent)]">

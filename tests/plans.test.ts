@@ -45,11 +45,15 @@ test("free includes the whole core loop, so the trial proves something", () => {
   }
 });
 
-test("free withholds only the two features the paid plans are sold on", () => {
-  // The line moved deliberately: free now carries the saving and alerting
-  // features, and the paid plans are distinguished by these two.
-  for (const feature of ["customer_groups", "saved_formulas"] as const) {
-    assert.equal(planIncludes("free", feature), false, feature);
+test("free withholds nothing — the allowance is the only limit", () => {
+  /*
+   * The line moved again, deliberately and on request: no feature is held
+   * back by plan any more. What separates the plans is how many credits they
+   * carry, so this asserts the absence of a feature gate rather than where it
+   * sits — if a padlock is ever reintroduced, this fails and says so.
+   */
+  for (const feature of FEATURES) {
+    assert.equal(planIncludes("free", feature), true, feature);
   }
 });
 
@@ -95,10 +99,15 @@ test("running out of credits does not take back what was already produced", () =
   assert.deepEqual(canUseFeature("monthly", "export_pdf", 0), { allowed: true });
 });
 
-test("a feature outside the plan says so, rather than blaming credits", () => {
-  const decision = canUseFeature("free", "saved_formulas", 10);
-  assert.equal(decision.allowed, false);
-  assert.equal(decision.allowed === false && decision.reason, "not_in_plan");
+test("with every feature included, a refusal can only ever be about credits", () => {
+  // The "not_in_plan" branch still exists for a future plan that withholds
+  // something; today nothing reaches it, and a refusal that blamed the plan
+  // would be telling the user to buy something they already have.
+  assert.deepEqual(canUseFeature("free", "saved_formulas", 10), { allowed: true });
+
+  const spent = canUseFeature("free", "analysis", 0);
+  assert.equal(spent.allowed, false);
+  assert.equal(spent.allowed === false && spent.reason, "no_credits");
 });
 
 test("the unlimited plan never runs out", () => {

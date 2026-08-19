@@ -78,20 +78,19 @@ export const PLANS: Record<PlanId, Plan> = {
      * customer nothing. What it does not include is the work that only pays
      * off when you come back: saving, comparing and being told about changes.
      */
-    features: [
-      "analysis",
-      "explore",
-      "export_pdf",
-      "export_excel",
-      // Opened up on request: these were locked, and a padlock on a screen a
-      // free account can reach teaches people to ignore padlocks. Saved
-      // formulas and customer groups stay paid — they are the two the product
-      // sells on.
-      "saved_views",
-      "saved_numbers",
-      "alerts",
-      "share_links",
-    ],
+    /*
+     * Every feature, for everyone. Asked for directly, twice.
+     *
+     * What limits an account is now the credit allowance alone, not a list of
+     * screens it may not open: use anything, and when the allowance runs out
+     * the account can still read and download everything it has produced, but
+     * cannot create more. One rule instead of two is also easier to explain
+     * than a padlock whose meaning changes per screen.
+     *
+     * The trade this makes is deliberate and worth stating: with nothing held
+     * back, the paid plans sell credits and nothing else.
+     */
+    features: [...FEATURES],
     highlights: [
       "10 AI analysis credits",
       "Unlimited file uploads",

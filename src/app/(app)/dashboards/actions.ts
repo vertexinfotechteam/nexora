@@ -11,6 +11,7 @@ import {
   renameDashboard,
 } from "@/lib/store";
 import { boundedString, isUuid } from "@/lib/security/validate";
+import { canCreate } from "@/lib/credits";
 import type { WidgetType } from "@/lib/store/types";
 import { AGGREGATIONS } from "@/lib/analysis/explore";
 
@@ -40,6 +41,10 @@ export async function createViewAction(name: string): Promise<ViewResult> {
 
   const clean = boundedString(name, 80);
   if (!clean) return { ok: false, error: "Give the view a name." };
+
+  // Creating is new work; reading and downloading are not, and are left alone.
+  const allowance = await canCreate(session);
+  if (!allowance.allowed) return { ok: false, error: allowance.message };
 
   const view = await createDashboard(session, { name: clean });
   revalidatePath("/dashboards");
@@ -92,6 +97,9 @@ export async function addTileAction(input: {
    * The view is fetched rather than trusted from the form: without this, a
    * tile could be posted onto another workspace's view by id alone.
    */
+  const allowance = await canCreate(session);
+  if (!allowance.allowed) return { ok: false, error: allowance.message };
+
   const view = await getDashboard(session, input.dashboardId);
   if (!view) return { ok: false, error: "That view could not be found." };
 
