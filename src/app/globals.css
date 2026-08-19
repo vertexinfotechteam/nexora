@@ -306,12 +306,22 @@ body {
    layers underneath it — a slow-drifting grid and two ambient glows.
    --------------------------------------------------------------------------- */
 
+/*
+ * Drifts by moving the layer, not by repainting it.
+ *
+ * This used to animate `background-position`, which is a paint property: every
+ * frame the browser re-drew a full-viewport grid and re-applied the mask
+ * below, on the main thread, forever — including while the page was being
+ * scrolled, which is exactly when there is no time to spare. Translating by
+ * one whole tile is visually identical because the pattern repeats every 60px,
+ * but it runs on the compositor and costs the main thread nothing.
+ */
 @keyframes nx-grid-drift {
   from {
-    background-position: 0 0, 0 0;
+    transform: translate3d(0, 0, 0);
   }
   to {
-    background-position: 60px 60px, 60px 60px;
+    transform: translate3d(60px, 60px, 0);
   }
 }
 
@@ -324,6 +334,7 @@ body {
   mask-image: radial-gradient(ellipse 100% 70% at 50% 0%, #000 30%, transparent 85%);
   animation: nx-grid-drift 40s linear infinite;
   opacity: var(--nx-ambient-opacity);
+  will-change: transform;
 }
 
 @keyframes nx-glow-a {
@@ -353,6 +364,13 @@ body {
     rgba(var(--nx-ambient-1), 0) 70%
   );
   animation: nx-glow-a 26s ease-in-out infinite;
+  /*
+   * Promotes the blurred layer so it is rasterised once and then simply
+   * transformed. Without this the browser re-renders a 120px+ blur on every
+   * frame of the scale, which is the single most expensive thing on the page.
+   */
+  will-change: transform;
+  contain: paint;
   opacity: var(--nx-ambient-opacity);
 }
 
@@ -363,6 +381,13 @@ body {
     rgba(var(--nx-ambient-2), 0) 70%
   );
   animation: nx-glow-b 32s ease-in-out infinite;
+  /*
+   * Promotes the blurred layer so it is rasterised once and then simply
+   * transformed. Without this the browser re-renders a 120px+ blur on every
+   * frame of the scale, which is the single most expensive thing on the page.
+   */
+  will-change: transform;
+  contain: paint;
   opacity: var(--nx-ambient-opacity);
 }
 

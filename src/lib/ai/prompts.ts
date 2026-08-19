@@ -1,6 +1,6 @@
 import "server-only";
 
-import { DATASET_TABLE } from "@/lib/duckdb/engine";
+import { DATASET_TABLE } from "@/lib/duckdb/constants";
 
 /**
  * Prompt construction and untrusted-content handling.

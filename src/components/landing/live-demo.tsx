@@ -96,10 +96,61 @@ function useContainerWidth<T extends HTMLElement>() {
   return [ref, width] as const;
 }
 
+/**
+ * True while the element is on screen and the tab is in front.
+ *
+ * These panels tick on a timer to look alive. That is the right behaviour
+ * while someone is looking at them and pure waste otherwise — the landing page
+ * is long, so for most of a visit both panels sit far outside the viewport
+ * still re-rendering a chart nobody can see, on the main thread, competing
+ * with the scroll that carried them away. Nothing about how they look or
+ * behave while visible changes; they simply stop when there is no one to see.
+ */
+function useOnScreen<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
+  /*
+   * Starts running, and stops only once something reports the panel is out of
+   * sight. The other way round — start paused, wait to be told it is visible —
+   * puts the panel's normal behaviour at the mercy of an observer callback
+   * arriving, and anywhere that callback does not arrive the panel is frozen
+   * with no way back. Defaulting to on means the worst case is the behaviour
+   * this had before: it simply keeps ticking.
+   */
+  const [active, setActive] = useState(true);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+
+    let onScreen = true;
+    const sync = () => setActive(onScreen && !document.hidden);
+    sync();
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        onScreen = entry.isIntersecting;
+        sync();
+      },
+      // A little margin so it is already running by the time it scrolls in.
+      { rootMargin: "150px" },
+    );
+    observer.observe(element);
+    document.addEventListener("visibilitychange", sync);
+
+    return () => {
+      observer.disconnect();
+      document.removeEventListener("visibilitychange", sync);
+    };
+  }, []);
+
+  return [ref, active] as const;
+}
+
 export function LiveDemoChart() {
   const [points, setPoints] = useState<Point[]>([]);
   const tick = useRef(0);
   const [chartRef, chartWidth] = useContainerWidth<HTMLDivElement>();
+  const [panelRef, onScreen] = useOnScreen<HTMLDivElement>();
 
   // Build the series on the client only, so server and client markup agree.
   useEffect(() => {
@@ -107,7 +158,7 @@ export function LiveDemoChart() {
   }, []);
 
   useEffect(() => {
-    if (points.length === 0) return;
+    if (points.length === 0 || !onScreen) return;
     const id = setInterval(() => {
       setPoints((previous) => {
         if (previous.length === 0) return previous;
@@ -134,7 +185,7 @@ export function LiveDemoChart() {
       });
     }, 1500);
     return () => clearInterval(id);
-  }, [points.length]);
+  }, [points.length, onScreen]);
 
   const latest = points[points.length - 1];
   const first = points[0];
@@ -144,7 +195,10 @@ export function LiveDemoChart() {
       : 0;
 
   return (
-    <div className="overflow-hidden rounded-xl border border-[var(--nx-border)] bg-[var(--nx-card)] shadow-[var(--nx-shadow-lg)]">
+    <div
+      ref={panelRef}
+      className="overflow-hidden rounded-xl border border-[var(--nx-border)] bg-[var(--nx-card)] shadow-[var(--nx-shadow-lg)]"
+    >
       {/* Window chrome */}
       <div className="flex items-center gap-2 border-b border-[var(--nx-border)] bg-[var(--nx-surface)] px-3 py-2">
         <div className="flex gap-1.5">
@@ -311,12 +365,14 @@ const POLL_OPTIONS = [
 export function LiveDemoPoll() {
   const [voted, setVoted] = useState<string | null>(null);
   const [drift, setDrift] = useState(0);
+  const [panelRef, onScreen] = useOnScreen<HTMLDivElement>();
 
   // Small drift so the bars feel alive without pretending to be a live tally.
   useEffect(() => {
+    if (!onScreen) return;
     const id = setInterval(() => setDrift((d) => d + 1), 4000);
     return () => clearInterval(id);
-  }, []);
+  }, [onScreen]);
 
   const results = useMemo(() => {
     const raw = POLL_OPTIONS.map((option, index) => ({
@@ -334,7 +390,10 @@ export function LiveDemoPoll() {
   }, [drift, voted]);
 
   return (
-    <div className="rounded-xl border border-[var(--nx-border)] bg-[var(--nx-card)] p-4 shadow-[var(--nx-shadow)]">
+    <div
+      ref={panelRef}
+      className="rounded-xl border border-[var(--nx-border)] bg-[var(--nx-card)] p-4 shadow-[var(--nx-shadow)]"
+    >
       <div className="mb-3 flex items-start gap-2">
         <div>
           <p className="text-[12.5px] font-semibold">

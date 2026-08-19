@@ -1,6 +1,7 @@
 import "server-only";
 
 import { DuckDBInstance, type DuckDBConnection } from "@duckdb/node-api";
+import { DATASET_TABLE } from "./constants";
 import { SQL_LIMITS } from "@/lib/env";
 
 /**
@@ -34,7 +35,10 @@ export class QueryError extends Error {
 }
 
 /** Table name the dataset is always loaded as. Referenced in AI prompts. */
-export const DATASET_TABLE = "dataset";
+// Defined in ./constants so modules needing only the name do not load
+// this file, and with it the native binding. Re-exported here because every
+// existing caller imports it from the engine.
+export { DATASET_TABLE } from "./constants";
 
 type Engine = {
   instance: DuckDBInstance;

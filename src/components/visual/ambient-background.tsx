@@ -78,8 +78,24 @@ export function AmbientBackground({ className }: { className?: string }) {
     let lastRetarget = 0;
     let tints = readTints(document.documentElement);
 
-    // A 3x retina buffer triples fill cost for a layer nobody looks at directly.
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    /*
+     * A 3x retina buffer triples fill cost for a layer nobody looks at
+     * directly. Phones are capped harder still: they have the least GPU
+     * headroom and the most pixels per CSS point, and this is a low-opacity
+     * backdrop of soft dots and hairlines where the difference between 1.5x
+     * and 2x is not visible — but it is a third of the fill cost, every frame.
+     */
+    const isPhone = window.matchMedia("(max-width: 768px)").matches;
+    const dpr = Math.min(window.devicePixelRatio || 1, isPhone ? 1.5 : 2);
+
+    /*
+     * Ambient motion is slow by design, so half the frames carry all of the
+     * meaning. Rendering at ~30fps on a phone halves the work this layer asks
+     * of the main thread and leaves that time for scrolling, which is the one
+     * thing the person is actually doing.
+     */
+    const minFrameMs = isPhone ? 1000 / 30 : 0;
+    let lastDrawn = 0;
 
     const seedNodes = (count: number): Node[] =>
       Array.from({ length: count }, () => ({
@@ -290,7 +306,13 @@ export function AmbientBackground({ className }: { className?: string }) {
         if (node.y > height + 20) node.y = -20;
       }
 
-      render(time);
+      // Skip the draw on frames we are deliberately not rendering; the
+      // simulation above still advances, so the motion stays smooth and only
+      // its sampling rate changes.
+      if (time - lastDrawn >= minFrameMs) {
+        lastDrawn = time;
+        render(time);
+      }
       frame = requestAnimationFrame(step);
     };
 
@@ -341,7 +363,10 @@ export function AmbientBackground({ className }: { className?: string }) {
       className={`pointer-events-none fixed inset-0 -z-10 overflow-hidden ${className ?? ""}`}
     >
       {/* Drifting grid */}
-      <div className="nx-ambient-grid absolute inset-0" />
+      {/* Inset by one tile in every direction: the layer now drifts by a whole
+          tile, so the edge it travels away from must start outside the frame or
+          a bare strip would appear at the top-left. */}
+      <div className="nx-ambient-grid absolute -inset-[60px]" />
 
       {/* Ambient glows in the mark's two colours */}
       <div className="nx-glow-purple absolute -left-[12%] -top-[18%] h-[62vh] w-[62vw] rounded-full blur-[120px]" />
