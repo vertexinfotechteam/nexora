@@ -43,7 +43,7 @@ export function AppShell({
           onMenuClick={() => setMobileOpen(true)}
         />
         <main className="flex-1 p-3 sm:p-4">{children}</main>
-        <footer className="flex items-center justify-between border-t border-[var(--nx-border)] px-4 py-2 text-[10.5px] text-[var(--nx-text-faint)]">
+        <footer className="flex items-center justify-between px-4 py-2 text-[10.5px] text-[var(--nx-text-faint)]">
           <span>All times shown in UTC</span>
           <span>
             {session.mode === "local"

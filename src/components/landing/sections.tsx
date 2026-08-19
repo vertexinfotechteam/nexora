@@ -494,15 +494,12 @@ export function Team() {
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--nx-purple)] to-[var(--nx-accent)] text-[14px] font-semibold text-white">
                   {member.initials}
                 </span>
-                {/* Names only. Titles invite a hierarchy read that says
-                    nothing about the product. */}
+                {/* Names only — no title, no description. Either invites a
+                    hierarchy read that says nothing about the product. */}
                 <h3 className="min-w-0 truncate text-[14px] font-semibold">
                   {member.name}
                 </h3>
               </div>
-              <p className="mt-3 text-[12px] leading-relaxed text-[var(--nx-text-muted)]">
-                {member.focus}
-              </p>
             </article>
           ))}
         </div>
@@ -659,7 +656,7 @@ export function Footer() {
         </div>
       </div>
 
-      <div className="relative border-t border-white/10">
+      <div className="relative">
         <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-5 text-center text-[12px] text-[#7c8f9d] sm:px-6 md:flex-row md:items-center md:text-left">
           <p>
             © {new Date().getFullYear()} {COMPANY.product}. All rights reserved.

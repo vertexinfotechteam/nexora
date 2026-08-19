@@ -25,12 +25,52 @@ const LINKS = [
 export function LandingNavbar({ signedIn }: { signedIn: boolean }) {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const [active, setActive] = useState<string>("");
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  /*
+   * Marks which section the reader is currently in.
+   *
+   * Done with an observer rather than by measuring on scroll: reading each
+   * section's position every frame forces the browser to recompute layout
+   * during the one moment it has no time to spare. The observer reports
+   * crossings instead, so this costs nothing while scrolling.
+   *
+   * The margins collapse the viewport to a band across its middle, so a
+   * section becomes current when it reaches roughly where the eye is, not the
+   * instant its top edge appears at the bottom of the screen.
+   */
+  useEffect(() => {
+    const ids = LINKS.map((link) => link.href.slice(1));
+    const sections = ids
+      .map((id) => document.getElementById(id))
+      .filter((el): el is HTMLElement => el !== null);
+
+    if (sections.length === 0) return;
+
+    const visible = new Set<string>();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) visible.add(entry.target.id);
+          else visible.delete(entry.target.id);
+        }
+        // Document order, so when the band spans two sections the upper one
+        // wins and the highlight never flickers between them.
+        const current = ids.find((id) => visible.has(id));
+        setActive(current ? `#${current}` : "");
+      },
+      { rootMargin: "-25% 0px -35% 0px" },
+    );
+
+    for (const section of sections) observer.observe(section);
+    return () => observer.disconnect();
   }, []);
 
   return (
@@ -71,7 +111,13 @@ export function LandingNavbar({ signedIn }: { signedIn: boolean }) {
                   a rhythm instead of four identical grey words. */}
               <a
                 href={link.href}
-                className="nx-navlink relative rounded-md px-3 py-2 text-[13px] font-medium text-[var(--nx-text-muted)] transition-colors hover:text-[var(--nx-text)]"
+                aria-current={active === link.href ? "true" : undefined}
+                className={cn(
+                  "nx-navlink relative rounded-md px-3 py-2 text-[13px] font-medium transition-colors",
+                  active === link.href
+                    ? "bg-[var(--nx-purple)] font-semibold text-[var(--nx-purple-on)]"
+                    : "text-[var(--nx-text-muted)] hover:text-[var(--nx-text)]",
+                )}
               >
                 {link.label}
               </a>
@@ -116,7 +162,13 @@ export function LandingNavbar({ signedIn }: { signedIn: boolean }) {
                 <a
                   href={link.href}
                   onClick={() => setOpen(false)}
-                  className="block rounded-md px-2 py-2 text-[13px] text-[var(--nx-text-muted)] hover:bg-[var(--nx-elevated)] hover:text-[var(--nx-text)]"
+                  aria-current={active === link.href ? "true" : undefined}
+                  className={cn(
+                    "block rounded-md px-2 py-2 text-[13px]",
+                    active === link.href
+                      ? "bg-[var(--nx-purple)] font-semibold text-[var(--nx-purple-on)]"
+                      : "text-[var(--nx-text-muted)] hover:bg-[var(--nx-elevated)] hover:text-[var(--nx-text)]",
+                  )}
                 >
                   {link.label}
                 </a>
