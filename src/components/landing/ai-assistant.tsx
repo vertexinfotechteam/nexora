@@ -176,7 +176,7 @@ export function AiAssistant() {
            * capping the width leaves the browser to do the arithmetic against
            * the viewport it actually has.
            */
-          className="nx-enter fixed bottom-20 left-4 right-4 z-[60] ml-auto flex h-[min(520px,calc(100vh-7rem))] max-w-[380px] flex-col overflow-hidden rounded-xl border border-[var(--nx-border)] bg-[var(--nx-card)] shadow-[var(--nx-shadow-lg)]"
+          className="nx-enter fixed bottom-20 left-4 right-4 z-[60] ml-auto flex h-[min(520px,calc(100dvh-7rem))] max-w-[380px] flex-col overflow-hidden rounded-xl border border-[var(--nx-border)] bg-[var(--nx-card)] shadow-[var(--nx-shadow-lg)]"
         >
           <header className="flex items-center gap-2.5 border-b border-[var(--nx-border)] bg-[var(--nx-surface)] px-3 py-2.5">
             <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[var(--nx-purple)] to-[var(--nx-accent)]">

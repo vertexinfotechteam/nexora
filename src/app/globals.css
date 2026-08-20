@@ -185,6 +185,30 @@ body {
   height: 100%;
 }
 
+/*
+ * The page never scrolls sideways.
+ *
+ * A phone reports a narrower viewport than anything here is designed against,
+ * and a single element a few pixels too wide — a decorative blur, a chart
+ * mid-measure, an animation that scales past its box — turns the whole
+ * document into a horizontal scroller. The reader then finds the page sliding
+ * under their thumb while they are trying to read down it, which is the
+ * complaint this addresses.
+ *
+ * `clip` rather than `hidden` on purpose: `hidden` makes the element a scroll
+ * container, and an ancestor scroll container silently disables `position:
+ * sticky` on everything inside it — which would unpin the navbar to fix the
+ * scrolling. `clip` cuts the overflow without creating that container, so the
+ * header keeps sticking.
+ *
+ * This treats the symptom deliberately. Anything genuinely too wide is still a
+ * bug worth finding; this stops it reaching the reader as a broken-feeling
+ * page in the meantime.
+ */
+html {
+  overflow-x: clip;
+}
+
 body {
   background: var(--nx-bg);
   color: var(--nx-text);
