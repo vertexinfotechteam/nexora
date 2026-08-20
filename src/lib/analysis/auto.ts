@@ -1,6 +1,7 @@
 import "server-only";
 
 import { DATASET_TABLE, quoteIdent, runQuery } from "@/lib/duckdb/engine";
+import { truncTemporal } from "./date-sql";
 import { formatNumber } from "@/lib/utils";
 import { detectAnomalies } from "./anomaly";
 import { accuracyLabel, forecastSeries } from "./forecast";
@@ -224,7 +225,7 @@ export async function runAutoAnalysis(
       if (dateColumn) {
         const seriesResult = await runQuery(
           engineKey,
-          `select date_trunc('${result.granularity}', ${quoteIdent(dateColumn.name)})::date as period,
+          `select ${truncTemporal(quoteIdent(dateColumn.name), result.granularity)}::date as period,
                   ${aggregateSql(measure)}::double as total
            from ${DATASET_TABLE}
            where ${quoteIdent(dateColumn.name)} is not null
@@ -279,7 +280,7 @@ export async function runAutoAnalysis(
 
     const seriesResult = await runQuery(
       engineKey,
-      `select date_trunc('${result.granularity}', ${quoteIdent(dateColumn.name)})::date::varchar as period,
+      `select ${truncTemporal(quoteIdent(dateColumn.name), result.granularity)}::date::varchar as period,
               ${aggregateSql(primary)}::double as ${quoteIdent(primary.name)}
        from ${DATASET_TABLE}
        where ${quoteIdent(dateColumn.name)} is not null

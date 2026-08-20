@@ -1,6 +1,7 @@
 import "server-only";
 
 import { SQL_LIMITS } from "@/lib/env";
+import { truncTemporal } from "@/lib/analysis/date-sql";
 import {
   DATASET_TABLE,
   QueryError,
@@ -259,18 +260,30 @@ function measureVerb(column: DatasetColumn): string {
 }
 
 /**
- * Truncates a date/timestamp column to the period start.
+ * Truncates a date column to the period start.
  *
  * The cast to DATE matters: on a TIMESTAMP column date_trunc returns a
  * TIMESTAMP, which serialises as "2024-01-01 00:00:00" and stops the chart
  * selector recognising the column as a time axis — a time series would then be
  * drawn as a bar chart.
+ *
+ * The try_cast matters for a different reason. A column is treated as a date
+ * by its semantic type, which is decided while profiling from what the values
+ * look like — but the engine may still be storing it as text, because that is
+ * what the file contained. Handing text straight to date_trunc fails the whole
+ * step with "No function matches the given name and argument types
+ * date_trunc(STRING_LITERAL, VARCHAR)", which is what a forecast on a
+ * text-typed month column used to do.
+ *
+ * try_cast rather than cast: a value that cannot be read as a date becomes
+ * NULL and drops out of the series, instead of taking the entire analysis down
+ * with it.
  */
 function truncSql(column: string, granularity: string): string {
   const unit = ["day", "week", "month", "quarter", "year"].includes(granularity)
     ? granularity
     : "month";
-  return `date_trunc('${unit}', ${quoteIdent(column)})::date`;
+  return `${truncTemporal(quoteIdent(column), unit)}::date`;
 }
 
 function seriesFromRows(
