@@ -7,6 +7,7 @@ import { getServiceClient, hasServiceClient } from "@/lib/supabase/admin";
 import { boundedString } from "@/lib/security/validate";
 import { enforceLimit } from "@/lib/security/guard";
 import { UPLOAD_LIMITS } from "@/lib/env";
+import { getCreditBalance } from "@/lib/credits";
 
 export const maxDuration = 30;
 
@@ -65,6 +66,24 @@ export async function POST(request: NextRequest) {
   }
   if (!Number.isFinite(sizeBytes) || sizeBytes <= 0) {
     return NextResponse.json({ error: "A file size is required." }, { status: 400 });
+  }
+
+  /*
+   * Checked here, before a URL is issued.
+   *
+   * An import costs a credit, and finding that out after transferring a
+   * hundred megabytes would be a poor way to learn it. This is the first
+   * request of the three, and the cheapest place to say no.
+   */
+  const balance = await getCreditBalance(session);
+  if (balance.remaining <= 0) {
+    return NextResponse.json(
+      {
+        error: "Your credits for this period are used up, so no new file can be imported.",
+        hint: "Everything you have already uploaded stays available to read, analyse and download.",
+      },
+      { status: 402 },
+    );
   }
 
   const fileName = sanitizeFileName(rawName);

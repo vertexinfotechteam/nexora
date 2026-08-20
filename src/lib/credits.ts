@@ -21,6 +21,23 @@ import type { Session } from "@/lib/store/types";
 
 export const FREE_PLAN_CREDITS = 10;
 
+/**
+ * What spends a credit.
+ *
+ * Importing a file costs one, and so does running an analysis. Both are the
+ * expensive half of the product — an import profiles every column through the
+ * engine, an analysis runs a planner over it — and both are the moments a
+ * plan is really being used.
+ *
+ * Listed here rather than at the two call sites, because the balance is
+ * counted by reading these back: a kind charged but not counted would let an
+ * account spend for ever, and a kind counted but never charged would show a
+ * balance nobody could explain.
+ */
+export const BILLABLE_KINDS = ["ai_analysis", "dataset_import"] as const;
+
+export type BillableKind = (typeof BILLABLE_KINDS)[number];
+
 export const PLAN_CREDITS: Record<Session["plan"], number> = {
   free: FREE_PLAN_CREDITS,
   pro: 500,
@@ -73,7 +90,7 @@ async function readUsed(session: Session): Promise<number> {
     .select("id", { count: "exact", head: true })
     .eq("organization_id", session.organizationId)
     .eq("user_id", session.userId)
-    .eq("kind", "ai_analysis");
+    .in("kind", [...BILLABLE_KINDS]);
 
   return count ?? 0;
 }
@@ -102,11 +119,15 @@ export async function assertHasCredit(session: Session): Promise<CreditBalance> 
 }
 
 /**
- * Records one consumed credit. Called only after an analysis has succeeded.
+ * Records one consumed credit.
+ *
+ * Called only after the work has actually succeeded — a failed analysis or an
+ * import that could not be read must never cost the user anything.
  */
 export async function consumeCredit(
   session: Session,
   metadata: Record<string, unknown> = {},
+  kind: BillableKind = "ai_analysis",
 ): Promise<CreditBalance> {
   if (storeMode() === "local" || !hasServiceClient()) {
     const rows = await findLocal<CreditRow>(
@@ -135,7 +156,7 @@ export async function consumeCredit(
       id: newId(),
       organization_id: session.organizationId,
       user_id: session.userId,
-      kind: "ai_analysis",
+      kind,
       quantity: 1,
       metadata,
       occurred_at: new Date().toISOString(),

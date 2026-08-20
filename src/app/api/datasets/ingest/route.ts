@@ -15,6 +15,7 @@ import { ensureDatasetLoaded } from "@/lib/ingest/loader";
 import { profileDataset } from "@/lib/ingest/profile";
 import { boundedString, isUuid } from "@/lib/security/validate";
 import { enforceLimit } from "@/lib/security/guard";
+import { consumeCredit, getCreditBalance } from "@/lib/credits";
 
 export const maxDuration = 300;
 
@@ -91,6 +92,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Not found." }, { status: 404 });
   }
 
+  const balance = await getCreditBalance(session);
+  if (balance.remaining <= 0) {
+    return NextResponse.json(
+      {
+        error: "Your credits for this period are used up, so this file was not imported.",
+        hint: "Everything you have already uploaded stays available to read, analyse and download.",
+      },
+      { status: 402 },
+    );
+  }
+
   let createdId: string | null = null;
 
   try {
@@ -140,6 +152,16 @@ export async function POST(request: NextRequest) {
       quality_score: profile.quality.score,
     });
 
+    /*
+     * Charged only now that the file is loaded, profiled and readable — an
+     * import that failed on a corrupt file must never cost a credit.
+     */
+    const after = await consumeCredit(
+      session,
+      { datasetId: dataset.id, rows: profile.quality.rowCount, bytes: buffer.length },
+      "dataset_import",
+    );
+
     await audit({
       organization_id: session.organizationId,
       user_id: session.userId,
@@ -162,6 +184,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       dataset,
       quality: profile.quality,
+      credits: { used: after.used, limit: after.limit, remaining: after.remaining },
     });
   } catch (error) {
     // A dataset row already exists by this point, so it is marked failed with

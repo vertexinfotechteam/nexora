@@ -16,6 +16,7 @@ import {
   sha256,
 } from "@/lib/storage";
 import { enforceLimit } from "@/lib/security/guard";
+import { consumeCredit, getCreditBalance } from "@/lib/credits";
 import { checkFileSignature, IngestError, validateUpload } from "@/lib/ingest/source";
 import { ensureDatasetLoaded } from "@/lib/ingest/loader";
 import { profileDataset } from "@/lib/ingest/profile";
@@ -48,6 +49,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Not permitted." },
       { status },
+    );
+  }
+
+  // An import costs a credit, so the refusal comes before the file is read
+  // rather than after.
+  const balance = await getCreditBalance(session);
+  if (balance.remaining <= 0) {
+    return NextResponse.json(
+      {
+        error: "Your credits for this period are used up, so no new file can be imported.",
+        hint: "Everything you have already uploaded stays available to read, analyse and download.",
+      },
+      { status: 402 },
     );
   }
 
@@ -110,6 +124,15 @@ export async function POST(request: NextRequest) {
       column_count: profile.quality.columnCount,
       quality_score: profile.quality.score,
     });
+
+    // Charged on success, exactly as the direct-upload route does — the two
+    // ways in must cost the same or the price depends on which one the client
+    // happened to take.
+    await consumeCredit(
+      session,
+      { datasetId: dataset.id, rows: profile.quality.rowCount, bytes: file.size },
+      "dataset_import",
+    );
 
     await audit({
       organization_id: session.organizationId,
