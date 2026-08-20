@@ -15,6 +15,7 @@ import type {
   Anomaly,
   AnalysisJob,
   AnalysisResult,
+  Alert,
   AuditEntry,
   Dashboard,
   DashboardWidget,
@@ -961,4 +962,136 @@ export async function deleteWidget(session: Session, id: string): Promise<void> 
     .eq("id", id)
     .eq("organization_id", session.organizationId);
   if (error) throw new Error(`Could not remove the tile: ${error.message}`);
+}
+
+// ---------------------------------------------------------------------------
+// Alerts
+//
+// The table arrives with migration 0004. Until it is run, listing returns a
+// marker saying the table is absent rather than an empty array — the screen
+// then explains why it is empty instead of implying nobody has made an alert.
+// ---------------------------------------------------------------------------
+
+export type AlertListing =
+  | { ok: true; alerts: Alert[] }
+  | { ok: false; reason: "table_missing" | "unavailable"; detail: string };
+
+/** True when the error means the relation does not exist yet. */
+function isMissingTable(error: { code?: string; message?: string }): boolean {
+  return (
+    error.code === "PGRST205" ||
+    error.code === "42P01" ||
+    /schema cache|does not exist/i.test(error.message ?? "")
+  );
+}
+
+export async function listAlerts(session: Session): Promise<AlertListing> {
+  if (storeMode() === "local") {
+    const rows = await findLocal<Alert>(
+      "alerts",
+      (a) => a.organization_id === session.organizationId,
+    );
+    return { ok: true, alerts: rows.sort((a, b) => b.created_at.localeCompare(a.created_at)) };
+  }
+
+  const client = await supabaseOrThrow();
+  const { data, error } = await client
+    .from("alerts")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    return isMissingTable(error)
+      ? { ok: false, reason: "table_missing", detail: error.message }
+      : { ok: false, reason: "unavailable", detail: error.message };
+  }
+  return { ok: true, alerts: (data ?? []) as Alert[] };
+}
+
+export async function createAlert(
+  session: Session,
+  input: Pick<
+    Alert,
+    "dataset_id" | "name" | "group_by" | "measure" | "aggregation" | "comparison" | "threshold"
+  >,
+): Promise<Alert> {
+  const row: Alert = {
+    id: newId(),
+    organization_id: session.organizationId,
+    created_by: session.userId,
+    dataset_id: input.dataset_id,
+    name: input.name,
+    group_by: input.group_by,
+    measure: input.measure,
+    aggregation: input.aggregation,
+    comparison: input.comparison,
+    threshold: input.threshold,
+    is_active: true,
+    last_checked_at: null,
+    last_value: null,
+    last_state: null,
+    last_error: null,
+    created_at: nowIso(),
+    updated_at: nowIso(),
+  };
+
+  if (storeMode() === "local") return insertLocal("alerts", row);
+
+  const client = await supabaseOrThrow();
+  const { data, error } = await client.from("alerts").insert(row).select().single();
+  if (error) throw new Error(`Could not create the alert: ${error.message}`);
+  return data as Alert;
+}
+
+/** Records what a check saw. Never used as the basis of the next check. */
+export async function recordAlertCheck(
+  session: Session,
+  id: string,
+  observation: Pick<Alert, "last_value" | "last_state" | "last_error">,
+): Promise<void> {
+  const patch = { ...observation, last_checked_at: nowIso(), updated_at: nowIso() };
+
+  if (storeMode() === "local") {
+    await updateLocal<Alert>("alerts", id, patch);
+    return;
+  }
+  const client = await supabaseOrThrow();
+  // A failure to record an observation must not break the page that made it.
+  await client
+    .from("alerts")
+    .update(patch)
+    .eq("id", id)
+    .eq("organization_id", session.organizationId);
+}
+
+export async function setAlertActive(
+  session: Session,
+  id: string,
+  isActive: boolean,
+): Promise<void> {
+  if (storeMode() === "local") {
+    await updateLocal<Alert>("alerts", id, { is_active: isActive, updated_at: nowIso() });
+    return;
+  }
+  const client = await supabaseOrThrow();
+  const { error } = await client
+    .from("alerts")
+    .update({ is_active: isActive, updated_at: nowIso() })
+    .eq("id", id)
+    .eq("organization_id", session.organizationId);
+  if (error) throw new Error(`Could not update the alert: ${error.message}`);
+}
+
+export async function deleteAlert(session: Session, id: string): Promise<void> {
+  if (storeMode() === "local") {
+    await deleteLocal("alerts", (a) => a.id === id && a.organization_id === session.organizationId);
+    return;
+  }
+  const client = await supabaseOrThrow();
+  const { error } = await client
+    .from("alerts")
+    .delete()
+    .eq("id", id)
+    .eq("organization_id", session.organizationId);
+  if (error) throw new Error(`Could not delete the alert: ${error.message}`);
 }

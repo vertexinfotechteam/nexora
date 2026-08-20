@@ -30,17 +30,38 @@ export function AiAssistant() {
   const [messages, setMessages] = useState<Message[]>([GREETING]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
-  const endRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  /*
+   * Keeps the newest message in view by scrolling the list, not the page.
+   *
+   * scrollIntoView() was doing this before, and it does not stay inside the
+   * element it is called on: it scrolls every scrollable ancestor, the
+   * document included, and adjusts horizontally as well as vertically. On a
+   * phone that read as the page lurching up and down and sliding sideways the
+   * moment the assistant opened, which made the site feel broken while the
+   * panel was up. Setting scrollTop moves this one box and nothing else.
+   */
   useEffect(() => {
-    if (open) {
-      endRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    }
+    if (!open) return;
+    const list = listRef.current;
+    if (list) list.scrollTop = list.scrollHeight;
   }, [messages, open]);
 
+  /*
+   * The field is focused for a pointer, never for a touch.
+   *
+   * Focusing an input inside a fixed panel makes a mobile browser scroll the
+   * document to reach it and raise the keyboard over half the screen — before
+   * the reader has decided to type anything. preventScroll stops the jump on
+   * desktop; the coarse-pointer check stops the keyboard on a phone.
+   */
   useEffect(() => {
-    if (open) inputRef.current?.focus();
+    if (!open) return;
+    const coarse = window.matchMedia?.("(pointer: coarse)").matches;
+    if (coarse) return;
+    inputRef.current?.focus({ preventScroll: true });
   }, [open]);
 
   // Escape closes the panel.
@@ -180,7 +201,7 @@ export function AiAssistant() {
             </button>
           </header>
 
-          <div className="flex-1 space-y-2.5 overflow-y-auto px-3 py-3">
+          <div ref={listRef} className="flex-1 space-y-2.5 overflow-y-auto overscroll-contain px-3 py-3">
             {messages.map((message, index) => (
               <div
                 key={index}
@@ -226,7 +247,6 @@ export function AiAssistant() {
               </div>
             ) : null}
 
-            <div ref={endRef} />
           </div>
 
           <form

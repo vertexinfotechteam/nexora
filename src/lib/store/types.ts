@@ -377,3 +377,30 @@ export type DashboardWidget = {
   created_at: string;
   updated_at: string;
 };
+
+/**
+ * An alert: a saved question plus a line worth being told about.
+ *
+ * Like a saved-view tile it stores the question, not a number. `last_value` is
+ * kept only so the screen can say what the previous check saw; every check
+ * recomputes from the file rather than trusting it.
+ */
+export type Alert = {
+  id: string;
+  organization_id: string;
+  created_by: string;
+  dataset_id: string;
+  name: string;
+  group_by: string;
+  measure: string | null;
+  aggregation: string;
+  comparison: "above" | "below";
+  threshold: number;
+  is_active: boolean;
+  last_checked_at: string | null;
+  last_value: number | null;
+  last_state: "ok" | "triggered" | "error" | null;
+  last_error: string | null;
+  created_at: string;
+  updated_at: string;
+};
