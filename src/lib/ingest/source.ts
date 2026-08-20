@@ -1,7 +1,7 @@
 import "server-only";
 
 import { writeFile } from "node:fs/promises";
-import { extractTable } from "./header";
+import { assessTable, extractTable } from "./header";
 import path from "node:path";
 import { UPLOAD_LIMITS } from "@/lib/env";
 import { quoteLiteral } from "@/lib/duckdb/constants";
@@ -178,6 +178,23 @@ async function convertXlsxToCsv(absolutePath: string): Promise<string> {
   if (shape.rows.length === 1) {
     throw new IngestError(
       "The worksheet has column headings but no rows of data underneath them.",
+    );
+  }
+
+  /*
+   * Refused here rather than loaded and analysed.
+   *
+   * A sheet of notes will pass everything above it: a header gets chosen, rows
+   * get counted, the profile computes and a quality score comes out. What the
+   * person then sees is an analysis of NULLs under columns called column0 and
+   * column2 — an answer that looks broken with nothing saying their file was
+   * the problem. This is also before the credit is charged.
+   */
+  const assessment = assessTable(shape.rows);
+  if (!assessment.usable) {
+    throw new IngestError(
+      `No table of data was found in this worksheet. ${assessment.reason}`,
+      "If the data is on another sheet or below some notes, move it to its own sheet with one row of column headings at the top, and upload that.",
     );
   }
 

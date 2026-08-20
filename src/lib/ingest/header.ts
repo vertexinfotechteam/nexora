@@ -147,3 +147,91 @@ export function extractTable(rawRows: string[][]): SheetShape {
     droppedSummary,
   };
 }
+
+/** What a sheet looks like once the header has been chosen. */
+export type TableAssessment = {
+  usable: boolean;
+  /** Fraction of cells in the data rows that hold anything. */
+  fillRatio: number;
+  /** Columns with no value in any data row. */
+  emptyColumns: number;
+  totalColumns: number;
+  reason?: string;
+};
+
+/**
+ * Decides whether what came out of a sheet is a table at all.
+ *
+ * Not every spreadsheet holds data. People keep notes, checklists and layouts
+ * in them — a heading here, a bullet there, mostly empty cells — and the row
+ * detection above will still pick a header out of one, because it is built to
+ * find a header, not to doubt that a table exists.
+ *
+ * Loading one of those produces a dataset of a dozen NULL rows with columns
+ * named column0, column2, column3. Nothing then fails: the profile computes,
+ * the quality score comes out around fifty, and the analysis runs and returns
+ * nothing usable. The person is left with an answer that looks broken and no
+ * indication their file was the problem.
+ *
+ * The signal is columns rather than cells. A real export may leave a field
+ * blank often, but it does not carry columns that are empty from top to
+ * bottom; a page of notes is mostly such columns. Refusing here — before a
+ * credit is spent and before an analysis runs on nothing — costs an occasional
+ * unusual-but-real file, which the message accounts for by saying exactly what
+ * was seen.
+ */
+export function assessTable(rows: string[][]): TableAssessment {
+  if (rows.length < 2) {
+    return {
+      usable: false,
+      fillRatio: 0,
+      emptyColumns: 0,
+      totalColumns: rows[0]?.length ?? 0,
+      reason: "There are no rows of data underneath the headings.",
+    };
+  }
+
+  const [, ...dataRows] = rows;
+  const totalColumns = Math.max(...rows.map((row) => row.length));
+
+  let filled = 0;
+  const columnHasValue = new Array<boolean>(totalColumns).fill(false);
+
+  for (const row of dataRows) {
+    for (let column = 0; column < totalColumns; column++) {
+      if (!isBlank(row[column] ?? "")) {
+        filled += 1;
+        columnHasValue[column] = true;
+      }
+    }
+  }
+
+  const cells = dataRows.length * totalColumns;
+  const fillRatio = cells === 0 ? 0 : filled / cells;
+  const emptyColumns = columnHasValue.filter((has) => !has).length;
+
+  // Half the columns carrying nothing at all is the shape of a notes page, not
+  // of an export. Two columns of three is not, hence the floor on width.
+  if (totalColumns >= 4 && emptyColumns * 2 >= totalColumns) {
+    return {
+      usable: false,
+      fillRatio,
+      emptyColumns,
+      totalColumns,
+      reason: `${emptyColumns} of the ${totalColumns} columns are completely empty, so this reads as a page of notes rather than a table of data.`,
+    };
+  }
+
+  // Very sparse everywhere, without any single column being wholly empty.
+  if (fillRatio < 0.2) {
+    return {
+      usable: false,
+      fillRatio,
+      emptyColumns,
+      totalColumns,
+      reason: `Only ${Math.round(fillRatio * 100)}% of the cells contain anything, so there is not enough data here to analyse.`,
+    };
+  }
+
+  return { usable: true, fillRatio, emptyColumns, totalColumns };
+}
