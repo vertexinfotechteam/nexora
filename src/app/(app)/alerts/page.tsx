@@ -145,8 +145,10 @@ export default async function AlertsPage() {
               <CardBody className="flex items-start gap-2 p-3">
                 <AlertTriangle className="mt-px h-4 w-4 shrink-0 text-[var(--nx-warning)]" />
                 <p className="text-[12.5px] leading-relaxed">
-                  {triggered} of {checks.length} {triggered === 1 ? "alert is" : "alerts are"} over
-                  the line right now.
+                  {/* Plural follows the total, the verb follows the count:
+                      "1 of 2 alerts is", "2 of 5 alerts are". */}
+                  {triggered} of {checks.length} {checks.length === 1 ? "alert" : "alerts"}{" "}
+                  {triggered === 1 ? "is" : "are"} over the line right now.
                 </p>
               </CardBody>
             </Card>
