@@ -130,7 +130,26 @@ export function DocumentStudio({ initial }: { initial: BusinessDocument }) {
       if (!response.ok) throw new Error(data.error ?? "Could not save.");
       setDoc(data.document);
       toast.success("Saved.");
-      router.refresh();
+
+      /*
+       * Put the saved document in the URL, and only then refresh.
+       *
+       * The page decides what to edit from ?doc=. With nothing there it builds
+       * a brand new blank document — and its id is the React key on this
+       * editor, so refreshing after a save remounted the component and wiped
+       * the work off the screen a moment after saying "Saved". The document
+       * was safely in the database the whole time; it simply could not be seen
+       * any more, which is indistinguishable from losing it.
+       *
+       * Navigating to ?doc=<id> keeps the same key, so the editor stays put,
+       * and gives the document a real address that can be reopened or shared.
+       */
+      const current = new URLSearchParams(window.location.search).get("doc");
+      if (current !== data.document.id) {
+        router.replace(`/studio?doc=${data.document.id}`, { scroll: false });
+      } else {
+        router.refresh();
+      }
     } catch (error) {
       toast.error((error as Error).message);
     } finally {
